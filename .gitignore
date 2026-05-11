@@ -1,0 +1,30 @@
+.dart_tool/
+.android-user/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+.gradle/
+.gradle-user/
+/build/
+/coverage/
+
+# Android
+/android/.gradle/
+/android/local.properties
+/android/app/debug
+/android/app/profile
+/android/app/release
+/legacy_native_android/.gradle/
+/legacy_native_android/local.properties
+/legacy_native_android/app/build/
+/legacy_native_android/build/
+
+# IDE
+*.iml
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
