@@ -1,0 +1,149 @@
+===============================================================================
+            ANDIJAN RESTORAN — FLUTTER MOBIL ILOVA
+            Loyiha holati va maqsadi
+            Sana: 2026-05-12
+===============================================================================
+
+1. LOYIHA HAQIDA UMUMIY MA'LUMOT
+================================
+Nomi:       Andijan Restoran (andijan_flutter)
+Turi:       Flutter mobil ilova (Android)
+Maqsadi:    Restoran xodimlari uchun boshqaruv tizimi
+Backend:    Django REST API (https://kassa-production.up.railway.app/api)
+SDK:        Flutter 3.11+, Dart
+
+Rollar:
+  - Direktor  — restoran boshqaruvi, hisobotlar, xodimlar, menyu boshqarish
+  - Ofitsant  — stol tanlash, buyurtma berish, buyurtmalar ro'yxati
+  - Kassir    — (backend da mavjud, ilovada hali yo'q)
+
+
+2. LOYIHA FAYL TUZILISHI
+=========================
+lib/
+├── main.dart                          — Ilova kirish nuqtasi
+├── app.dart                           — MaterialApp, tema, base URL
+├── models/
+│   └── restaurant_models.dart         — Barcha data modellar (TableInfo, MenuItemData, OrderRecord, ...)
+├── services/
+│   └── restaurant_api_client.dart     — Backend API bilan aloqa (HttpClient)
+├── screens/
+│   ├── auth_screen.dart               — Login ekrani
+│   ├── restaurant_home_page.dart      — Asosiy boshqaruv markazi (state management)
+│   ├── waiter_screens.dart            — Ofitsant: stol tanlash, menyu buyurtma
+│   └── director_screens.dart          — Direktor: dashboard, ofitsantlar, menyu CRUD, hisobotlar, profil
+└── widgets/
+    └── common_widgets.dart            — Umumiy widgetlar (bottom bar, hero card, metric card, avatar, ...)
+
+
+3. HOZIRGI HOLAT — NIMA ISHLAYAPTI
+====================================
+
+✅ ISHLAYOTGAN FUNKSIYALAR:
+  - Login/Auth — backend API orqali (POST /api/auth/login/)
+  - Stollar ro'yxati — backend dan yuklash (GET /api/staff/tables/)
+  - Menyu ro'yxati — backend dan yuklash (GET /api/staff/menu/items/)
+  - Buyurtma yaratish — backendga yuborish (POST /api/staff/orders/)
+  - Buyurtmalar ro'yxati — backenddan olish (GET /api/staff/orders/)
+  - Buyurtma rad etish — backend orqali (POST /api/staff/orders/{id}/reject/)
+  - Backend ishlamasa demo rejimda ishlash (hardcoded ma'lumotlar)
+
+❌ ISHLAMAYOTGAN / LOKAL ISHLAYOTGAN FUNKSIYALAR:
+  - Menyu kategoriyalari CRUD — faqat lokal (backendga yuborilmaydi)
+  - Menyu qo'shish/tahrirlash/o'chirish — faqat lokal (backendga yuborilmaydi)
+  - Direktor dashboard — faqat lokal hisob (API chaqirilmaydi)
+  - Ofitsantlar bo'limi — hardcoded waiterAccounts dan o'qiladi (API chaqirilmaydi)
+  - Hisobotlar — hardcoded demoSalesReport (API chaqirilmaydi)
+  - Stol yaratish — yo'q
+  - Stolga qo'shilish (join) — faqat lokal
+  - Buyurtma bekor qilish (cancel) — yo'q
+  - Kassir roli — to'liq yo'q
+  - Base URL — localhost:8000 ga yo'naltirilgan (production emas)
+
+
+4. BACKEND API — MAVJUD ENDPOINTLAR (v1)
+==========================================
+
+AUTH:
+  POST /api/v1/auth/login        — Login (username, password → access, refresh, user)
+  GET  /api/v1/auth/me            — Joriy foydalanuvchi ma'lumotlari
+  POST /api/v1/auth/refresh       — Token yangilash
+
+STOLLAR:
+  GET  /api/v1/waiter/all-tables  — Barcha stollar (assigned_waiters bilan)
+  GET  /api/v1/tables             — Stollar ro'yxati (oddiy)
+  POST /api/v1/tables/{id}/join   — Stolga qo'shilish
+
+MENYU KATEGORIYALAR:
+  GET    /api/v1/menu/categories      — Ro'yxat
+  POST   /api/v1/menu/categories      — Yaratish (name, sort_order)
+  PATCH  /api/v1/menu/categories/{id} — Tahrirlash
+  DELETE /api/v1/menu/categories/{id} — O'chirish
+
+MENYU TAOMLAR:
+  GET    /api/v1/menu/items           — Ro'yxat
+  POST   /api/v1/menu/items           — Yaratish (name, category_id, price, ...)
+  PATCH  /api/v1/menu/items/{id}      — Tahrirlash
+  DELETE /api/v1/menu/items/{id}      — O'chirish
+
+BUYURTMALAR:
+  GET  /api/v1/orders                     — Ro'yxat (filter: status, table_id)
+  POST /api/v1/orders                     — Yaratish (table_id, items[{menu_item_id, quantity, note}])
+  GET  /api/v1/orders/{id}                — Tafsilot
+  POST /api/v1/orders/{id}/reject         — Rad etish (reason)
+  POST /api/v1/orders/{id}/cancel         — Bekor qilish (reason)
+
+DIREKTOR:
+  GET    /api/v1/director/waiters           — Ofitsantlar ro'yxati
+  POST   /api/v1/director/waiters           — Ofitsant yaratish (username, password, full_name, ...)
+  PATCH  /api/v1/director/waiters/{id}      — Tahrirlash
+  DELETE /api/v1/director/waiters/{id}      — O'chirish
+  GET    /api/v1/director/reports/revenue    — Daromad hisoboti (period=daily|weekly|monthly)
+  GET    /api/v1/director/reports/waiters    — Ofitsantlar hisoboti
+  GET    /api/v1/director/reports/waiters/{id} — Bitta ofitsant tafsiloti
+  GET    /api/v1/director/tables/{id}/qr    — QR kod olish
+
+DASHBOARD:
+  GET /api/v1/dashboard/summary — Umumiy statistika (stollar, buyurtmalar, to'lovlar, xodimlar)
+
+KASSIR:
+  GET  /api/v1/cashier/daily-stock            — Kunlik sig'im ro'yxati
+  POST /api/v1/cashier/daily-stock            — Sig'im belgilash
+  GET  /api/v1/cashier/orders/pending         — Kutayotgan buyurtmalar
+  POST /api/v1/cashier/orders/{id}/accept     — Buyurtmani qabul qilish
+  GET  /api/v1/cashier/tables/{id}/bill       — Stol hisobi
+  POST /api/v1/cashier/tables/{id}/close      — Stol hisobini yopish
+
+TO'LOVLAR:
+  GET  /api/v1/payments — To'lovlar ro'yxati
+  POST /api/v1/payments — To'lov yaratish (order_id, payment_method, amount)
+
+
+5. MAQSAD — NIMA QILISH KERAK
+===============================
+
+Asosiy maqsad: Barcha CRUD operatsiyalarni backend API bilan dinamik ishlatish.
+Hozirgi lokal/demo ma'lumotlar o'rniga hamma narsa backenddan kelishi kerak.
+
+Qadamlar:
+  1. Base URL ni production URL ga o'zgartirish
+  2. API clientga barcha v1 endpoint metodlarini qo'shish (~20+ metod)
+  3. Modellarni API response formatiga moslashtirish
+  4. Menyu kategoriyalari CRUD → API orqali
+  5. Menyu taomlari CRUD → API orqali (create, update, delete)
+  6. Direktor ofitsantlar → API orqali CRUD (hardcoded emas)
+  7. Direktor hisobotlar → API dan olish (demo emas)
+  8. Dashboard → API dan statistika olish
+  9. Stolga qo'shilish → API orqali
+  10. Buyurtma bekor qilish → API orqali
+  11. Hardcoded demo ma'lumotlarni olib tashlash
+
+Qo'shimcha (keyingi bosqich):
+  - Kassir roli uchun alohida ekranlar
+  - Pull-to-refresh funksionallik
+  - QR kod ko'rish/yuklab olish
+  - Offline rejim/cache
+
+===============================================================================
+                         OXIRGI YANGILANGAN: 2026-05-12
+===============================================================================

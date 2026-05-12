@@ -9,368 +9,308 @@ class RestaurantHomePage extends StatefulWidget {
 
 class _RestaurantHomePageState extends State<RestaurantHomePage> {
   final RestaurantApiClient _apiClient = RestaurantApiClient();
-  final Map<int, Set<String>> _tableAssignments = <int, Set<String>>{};
-  final List<TableInfo> _tables = demoTables.toList(growable: true);
-  final List<MenuItemData> _menuItems = demoMenu.toList(growable: true);
-  final List<String> _menuCategories = demoMenu
-      .map((item) => item.category)
-      .toSet()
-      .toList();
+  
+  List<TableInfo> _tables = [];
+  List<MenuItemData> _menuItems = [];
+  List<MenuCategory> _menuCategories = [];
+  List<OrderRecord> _orderRecords = [];
+  List<WaiterInfo> _waiters = [];
+  DashboardSummary? _summary;
+
   final Map<int, int> _quantitiesByItemId = <int, int>{};
   final Map<int, String> _notesByItemId = <int, String>{};
-  final List<OrderRecord> _orderRecords = <OrderRecord>[];
-  int _nextOrderId = 1;
 
   bool _isLoggedIn = false;
-  String _currentLogin = 'azizbek';
+  String _currentLogin = '';
   UserRole _currentRole = UserRole.waiter;
   WaiterSection _waiterSection = WaiterSection.orders;
   DirectorSection _directorSection = DirectorSection.dashboard;
   OrderStep _orderStep = OrderStep.tables;
   int? _selectedTableId;
-  int? _pendingJoinTableId;
 
-  String _loginInput = 'azizbek';
-  String _passwordInput = '12345';
+  String _loginInput = '';
+  String _passwordInput = '';
   String _loginError = '';
   String? _accessToken;
-  WaiterProfile? _currentProfileOverride;
-  bool _isSyncing = false;
-
-  UserAccount get _currentAccount =>
-      waiterAccounts[_currentLogin] ?? waiterAccounts['azizbek']!;
-
-  WaiterProfile get _currentProfile =>
-      _currentProfileOverride ?? _currentAccount.profile;
+  WaiterProfile? _currentProfile;
+  bool _isLoading = false;
 
   Future<void> _login() async {
     final login = _loginInput.trim();
+    if (login.isEmpty || _passwordInput.isEmpty) return;
+
     setState(() {
-      _isSyncing = true;
+      _isLoading = true;
       _loginError = '';
     });
 
     try {
       final session = await _apiClient.login(login, _passwordInput);
-      final tables = await _apiClient.fetchTables(session.accessToken);
-      final menuItems = await _apiClient.fetchMenuItems(session.accessToken);
-      final backendOrders = await _apiClient.fetchOrders(
-        session.accessToken,
-        menuItems,
-      );
-      if (!mounted) return;
-      setState(() {
-        _currentLogin = login;
-        _currentRole = session.role;
-        _currentProfileOverride = session.profile;
-        _accessToken = session.accessToken;
-        _isLoggedIn = true;
-        _isSyncing = false;
-        _loginError = '';
-        _orderRecords
-          ..clear()
-          ..addAll(backendOrders);
-        if (tables.isNotEmpty) {
-          _tables
-            ..clear()
-            ..addAll(tables);
-        }
-        if (menuItems.isNotEmpty) {
-          _menuItems
-            ..clear()
-            ..addAll(menuItems);
-          _menuCategories
-            ..clear()
-            ..addAll(menuItems.map((item) => item.category).toSet());
-        }
-      });
-      return;
-    } catch (_) {
-      // Keep local demo mode usable when the backend is unavailable.
-    }
-
-    final account = waiterAccounts[login];
-    if (account == null || account.password != _passwordInput) {
-      setState(() {
-        _loginError = "Login yoki parol noto'g'ri";
-        _isSyncing = false;
-      });
-      return;
-    }
-
-    setState(() {
+      _accessToken = session.accessToken;
       _currentLogin = login;
-      _currentRole = account.role;
-      _accessToken = null;
-      _currentProfileOverride = null;
-      _isLoggedIn = true;
-      _isSyncing = false;
-      _loginError = '';
-    });
+      _currentRole = session.role;
+      _currentProfile = session.profile;
+      
+      await _loadData();
+      
+      setState(() {
+        _isLoggedIn = true;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loginError = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadData() async {
+    if (_accessToken == null) return;
+    final token = _accessToken!;
+    
+    try {
+      final tables = await _apiClient.fetchTables(token);
+      final categories = await _apiClient.fetchCategories(token);
+      final items = await _apiClient.fetchMenuItems(token);
+      
+      List<OrderRecord> orders = [];
+      if (_currentRole == UserRole.waiter || _currentRole == UserRole.director) {
+        orders = await _apiClient.fetchOrders(token, items);
+      }
+
+      DashboardSummary? summary;
+      List<WaiterInfo> waiters = [];
+      if (_currentRole == UserRole.director) {
+        summary = await _apiClient.fetchDashboardSummary(token);
+        waiters = await _apiClient.fetchWaiters(token);
+      }
+
+      setState(() {
+        _tables = tables;
+        _menuCategories = categories;
+        _menuItems = items;
+        _orderRecords = orders;
+        _summary = summary;
+        _waiters = waiters;
+      });
+    } catch (e) {
+      debugPrint('Data load error: $e');
+    }
   }
 
   void _logout() {
     setState(() {
-      _currentLogin = 'azizbek';
-      _currentRole = UserRole.waiter;
-      _waiterSection = WaiterSection.orders;
-      _directorSection = DirectorSection.dashboard;
-      _orderStep = OrderStep.tables;
-      _selectedTableId = null;
-      _pendingJoinTableId = null;
       _isLoggedIn = false;
       _accessToken = null;
-      _currentProfileOverride = null;
-      _loginInput = 'azizbek';
-      _passwordInput = '12345';
+      _currentProfile = null;
+      _tables = [];
+      _menuItems = [];
+      _menuCategories = [];
+      _orderRecords = [];
     });
   }
 
-  void _selectDirectorSection(DirectorSection section) {
-    setState(() => _directorSection = section);
-  }
+  // ---- Waiter Actions ----
 
   void _selectTable(int tableId) {
-    final assigned = _tableAssignments[tableId] ?? <String>{};
-    setState(() {
+    final table = _tables.firstWhere((t) => t.id == tableId);
+    final assigned = table.assignedWaiters;
+    
+    if (assigned.isEmpty || assigned.any((w) => w['username'] == _currentLogin)) {
+      setState(() {
+        _selectedTableId = tableId;
+        _orderStep = OrderStep.menu;
+      });
       if (assigned.isEmpty) {
-        _tableAssignments[tableId] = <String>{_currentLogin};
-        _selectedTableId = tableId;
-        _pendingJoinTableId = null;
-        _orderStep = OrderStep.menu;
-      } else if (assigned.contains(_currentLogin)) {
-        _selectedTableId = tableId;
-        _pendingJoinTableId = null;
-        _orderStep = OrderStep.menu;
-      } else {
-        _pendingJoinTableId = tableId;
+        _joinTable(tableId);
       }
-    });
+    } else {
+      _showJoinDialog(tableId, assigned);
+    }
   }
 
-  void _joinTable(int tableId) {
-    setState(() {
-      final updated = _tableAssignments[tableId] ?? <String>{};
-      updated.add(_currentLogin);
-      _tableAssignments[tableId] = updated;
-      _selectedTableId = tableId;
-      _pendingJoinTableId = null;
-      _orderStep = OrderStep.menu;
-    });
+  void _showJoinDialog(int tableId, List<dynamic> assigned) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Stol #$tableId band"),
+        content: Text("Bu stolda ${assigned.map((w) => w['full_name']).join(', ')} ishlayapti. Siz ham qo'shilmoqchimisiz?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Yo\'q')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _joinTable(tableId);
+            },
+            child: const Text('Ha, qo\'shilish'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _joinTable(int tableId) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.joinTable(_accessToken!, tableId);
+      await _loadData();
+      setState(() {
+        _selectedTableId = tableId;
+        _orderStep = OrderStep.menu;
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
   }
 
   void _changeMenuQuantity(int itemId, int delta) {
     setState(() {
-      final nextValue = (_quantitiesByItemId[itemId] ?? 0) + delta;
-      final normalizedValue = nextValue < 0 ? 0 : nextValue;
-      _quantitiesByItemId[itemId] = normalizedValue;
-      if (normalizedValue == 0) {
-        _notesByItemId.remove(itemId);
-      }
+      final q = (_quantitiesByItemId[itemId] ?? 0) + delta;
+      _quantitiesByItemId[itemId] = q < 0 ? 0 : q;
     });
   }
 
   void _changeMenuItemNote(int itemId, String note) {
-    setState(() {
-      final normalized = note.trim();
-      if (normalized.isEmpty) {
-        _notesByItemId.remove(itemId);
-      } else {
-        _notesByItemId[itemId] = normalized;
-      }
-    });
-  }
-
-  void _updateMenuItem(int itemId, MenuItemData updatedItem) {
-    setState(() {
-      final index = _menuItems.indexWhere((item) => item.id == itemId);
-      if (index == -1) {
-        return;
-      }
-      if (!_menuCategories.contains(updatedItem.category)) {
-        _menuCategories.add(updatedItem.category);
-      }
-      _menuItems[index] = updatedItem;
-    });
-  }
-
-  void _addMenuItem(MenuItemData item) {
-    setState(() {
-      if (!_menuCategories.contains(item.category)) {
-        _menuCategories.add(item.category);
-      }
-      _menuItems.add(item);
-    });
-  }
-
-  void _deleteMenuItem(int itemId) {
-    setState(() {
-      _menuItems.removeWhere((item) => item.id == itemId);
-      _quantitiesByItemId.remove(itemId);
-    });
-  }
-
-  void _addMenuCategory(String category) {
-    final normalized = category.trim();
-    if (normalized.isEmpty) {
-      return;
-    }
-    setState(() {
-      if (!_menuCategories.contains(normalized)) {
-        _menuCategories.add(normalized);
-      }
-    });
-  }
-
-  void _renameMenuCategory(String oldCategory, String newCategory) {
-    final normalized = newCategory.trim();
-    if (normalized.isEmpty || normalized == oldCategory) {
-      return;
-    }
-
-    setState(() {
-      final oldIndex = _menuCategories.indexOf(oldCategory);
-      if (oldIndex != -1) {
-        _menuCategories.removeAt(oldIndex);
-        if (!_menuCategories.contains(normalized)) {
-          _menuCategories.insert(oldIndex, normalized);
-        } else {
-          _menuCategories.remove(normalized);
-          _menuCategories.insert(oldIndex, normalized);
-        }
-      } else if (!_menuCategories.contains(normalized)) {
-        _menuCategories.add(normalized);
-      }
-
-      for (var i = 0; i < _menuItems.length; i++) {
-        final item = _menuItems[i];
-        if (item.category == oldCategory) {
-          _menuItems[i] = item.copyWith(
-            category: normalized,
-            icon: _iconForCategory(normalized),
-            color: _colorForCategory(normalized),
-          );
-        }
-      }
-    });
-  }
-
-  void _deleteMenuCategory(String category) {
-    setState(() {
-      _menuCategories.remove(category);
-      final removedIds = _menuItems
-          .where((item) => item.category == category)
-          .map((item) => item.id)
-          .toList();
-      _menuItems.removeWhere((item) => item.category == category);
-      for (final id in removedIds) {
-        _quantitiesByItemId.remove(id);
-      }
-    });
+    _notesByItemId[itemId] = note;
   }
 
   Future<void> _submitOrder() async {
-    final tableId = _selectedTableId;
-    if (tableId == null) {
-      return;
-    }
-    final selectedItems = _menuItems
-        .where((item) => (_quantitiesByItemId[item.id] ?? 0) > 0)
-        .toList();
-    if (selectedItems.isEmpty) {
-      return;
-    }
-
-    setState(() => _isSyncing = true);
-
-    var backendOrderId = _nextOrderId;
-    final token = _accessToken;
-    if (token != null) {
-      try {
-        backendOrderId = await _apiClient.createOrder(
-          token: token,
-          tableId: tableId,
-          orderItems: selectedItems
-              .map(
-                (item) => {
-                  'menu_item': item.id,
-                  'quantity': _quantitiesByItemId[item.id] ?? 0,
-                  'note': _notesByItemId[item.id] ?? '',
-                },
-              )
-              .toList(),
-        );
-      } catch (error) {
-        if (!mounted) return;
-        setState(() => _isSyncing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Backendga yuborilmadi: $error')),
-        );
-        return;
+    if (_accessToken == null || _selectedTableId == null) return;
+    
+    final items = <Map<String, dynamic>>[];
+    _quantitiesByItemId.forEach((id, q) {
+      if (q > 0) {
+        items.add({
+          'menu_item_id': id,
+          'quantity': q,
+          'note': _notesByItemId[id] ?? '',
+        });
       }
-    }
-
-    setState(() {
-      for (final item in selectedItems) {
-        final quantity = _quantitiesByItemId[item.id] ?? 0;
-        if (quantity > 0) {
-          _orderRecords.add(
-            OrderRecord(
-              id: token == null ? _nextOrderId++ : backendOrderId,
-              waiterLogin: _currentLogin,
-              tableId: tableId,
-              itemName: item.name,
-              quantity: quantity,
-              note: _notesByItemId[item.id] ?? '',
-              icon: item.icon,
-              color: item.color,
-              status: OrderStatus.active,
-            ),
-          );
-        }
-      }
-      for (final item in _menuItems) {
-        _quantitiesByItemId[item.id] = 0;
-        _notesByItemId.remove(item.id);
-      }
-      if (token != null && backendOrderId >= _nextOrderId) {
-        _nextOrderId = backendOrderId + 1;
-      }
-      _selectedTableId = null;
-      _pendingJoinTableId = null;
-      _orderStep = OrderStep.tables;
-      _isSyncing = false;
     });
 
-    if (token != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Buyurtma kassaga yuborildi')),
+    if (items.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _apiClient.createOrder(
+        token: _accessToken!,
+        tableId: _selectedTableId!,
+        items: items,
       );
+      _quantitiesByItemId.clear();
+      _notesByItemId.clear();
+      _selectedTableId = null;
+      _orderStep = OrderStep.tables;
+      await _loadData();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buyurtma yuborildi')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ---- Director Actions ----
+
+  Future<void> _addCategory(String name, int sortOrder) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.createCategory(_accessToken!, name, sortOrder);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _updateCategory(int id, String name, int sortOrder) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.updateCategory(_accessToken!, id, name, sortOrder);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _deleteCategory(int id) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.deleteCategory(_accessToken!, id);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _addMenuItem(Map<String, dynamic> data) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.createMenuItem(_accessToken!, data);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _updateMenuItem(int id, Map<String, dynamic> data) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.updateMenuItem(_accessToken!, id, data);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _deleteMenuItem(int id) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.deleteMenuItem(_accessToken!, id);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
   Future<void> _rejectOrder(int orderId) async {
-    final token = _accessToken;
-    if (token != null) {
-      try {
-        await _apiClient.rejectOrder(token, orderId);
-      } catch (error) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Backendda rad etilmadi: $error')),
-        );
-        return;
-      }
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.rejectOrder(_accessToken!, orderId);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
-    setState(() {
-      for (var i = 0; i < _orderRecords.length; i++) {
-        if (_orderRecords[i].id == orderId) {
-          _orderRecords[i] = _orderRecords[i].copyWith(
-            status: OrderStatus.rejected,
-          );
-        }
-      }
-    });
+  }
+
+  Future<void> _addWaiter(Map<String, dynamic> data) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.createWaiter(_accessToken!, data);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _updateWaiter(int id, Map<String, dynamic> data) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.updateWaiter(_accessToken!, id, data);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
+  }
+
+  Future<void> _deleteWaiter(int id) async {
+    if (_accessToken == null) return;
+    try {
+      await _apiClient.deleteWaiter(_accessToken!, id);
+      await _loadData();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+    }
   }
 
   @override
@@ -380,95 +320,73 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
         loginInput: _loginInput,
         passwordInput: _passwordInput,
         errorText: _loginError,
-        isLoading: _isSyncing,
-        onLoginChanged: (value) => setState(() {
-          _loginInput = value;
-          _loginError = '';
-        }),
-        onPasswordChanged: (value) => setState(() {
-          _passwordInput = value;
-          _loginError = '';
-        }),
+        isLoading: _isLoading,
+        onLoginChanged: (val) => setState(() => _loginInput = val),
+        onPasswordChanged: (val) => setState(() => _passwordInput = val),
         onSubmit: _login,
       );
     }
 
     return Scaffold(
       body: SafeArea(
-        child: _currentRole == UserRole.director
-            ? _buildDirectorBody()
-            : _buildWaiterBody(),
+        child: RefreshIndicator(
+          onRefresh: _loadData,
+          child: _currentRole == UserRole.director ? _buildDirectorBody() : _buildWaiterBody(),
+        ),
       ),
       bottomNavigationBar: _currentRole == UserRole.director
-          ? _DirectorBottomBar(
-              currentSection: _directorSection,
-              onSelect: _selectDirectorSection,
-            )
+          ? _DirectorBottomBar(currentSection: _directorSection, onSelect: (s) => setState(() => _directorSection = s))
           : _WaiterBottomBar(
               currentSection: _waiterSection,
-              onSelect: (section) => setState(() {
-                _waiterSection = section;
-                if (section == WaiterSection.orders) {
-                  _selectedTableId = null;
-                  _pendingJoinTableId = null;
-                  _orderStep = OrderStep.tables;
-                }
+              onSelect: (s) => setState(() {
+                _waiterSection = s;
+                if (s == WaiterSection.orders) _orderStep = OrderStep.tables;
               }),
             ),
     );
   }
 
   Widget _buildWaiterBody() {
-    switch (_waiterSection) {
-      case WaiterSection.orders:
-        return _orderStep == OrderStep.tables
-            ? _TableSelectionScreen(
-                waiter: _currentProfile,
-                currentLogin: _currentLogin,
-                tables: _tables,
-                tableAssignments: _tableAssignments,
-                pendingJoinTableId: _pendingJoinTableId,
-                onSelectTable: _selectTable,
-                onJoinTable: _joinTable,
-                onDismissJoin: () => setState(() => _pendingJoinTableId = null),
-              )
-            : _MenuOrderScreen(
-                tableId: _selectedTableId ?? 1,
-                menu: _menuItems,
-                categories: _menuCategories,
-                quantitiesByItemId: _quantitiesByItemId,
-                notesByItemId: _notesByItemId,
-                isSubmitting: _isSyncing,
-                onBack: () => setState(() {
-                  _orderStep = OrderStep.tables;
-                  _pendingJoinTableId = null;
-                }),
-                onQuantityChanged: _changeMenuQuantity,
-                onNoteChanged: _changeMenuItemNote,
-                onSubmit: _submitOrder,
-              );
-      case WaiterSection.profile:
-        return _ProfileScreen(
-          login: _currentLogin,
-          profile: _currentProfile,
-          onLogout: _logout,
-        );
+    if (_waiterSection == WaiterSection.profile) {
+      return _ProfileScreen(login: _currentLogin, profile: _currentProfile!, onLogout: _logout);
     }
+    
+    if (_orderStep == OrderStep.tables) {
+      return _TableSelectionScreen(
+        waiter: _currentProfile!,
+        currentLogin: _currentLogin,
+        tables: _tables,
+        onSelectTable: _selectTable,
+        onJoinTable: _joinTable,
+      );
+    }
+
+    return _MenuOrderScreen(
+      tableId: _selectedTableId!,
+      menu: _menuItems,
+      categories: _menuCategories,
+      quantitiesByItemId: _quantitiesByItemId,
+      notesByItemId: _notesByItemId,
+      isSubmitting: _isLoading,
+      onBack: () => setState(() => _orderStep = OrderStep.tables),
+      onQuantityChanged: _changeMenuQuantity,
+      onNoteChanged: _changeMenuItemNote,
+      onSubmit: _submitOrder,
+    );
   }
 
   Widget _buildDirectorBody() {
     switch (_directorSection) {
       case DirectorSection.dashboard:
-        return _DirectorDashboardScreen(
-          director: _currentProfile,
-          tables: _tables,
-          tableAssignments: _tableAssignments,
-        );
+        return _DirectorDashboardScreen(director: _currentProfile!, summary: _summary!, tables: _tables);
       case DirectorSection.waiters:
         return _DirectorWaitersScreen(
-          tableAssignments: _tableAssignments,
-          orders: _orderRecords,
+          waiters: _waiters,
           onRejectOrder: _rejectOrder,
+          onCreateWaiter: _addWaiter,
+          onUpdateWaiter: _updateWaiter,
+          onDeleteWaiter: _deleteWaiter,
+          orders: _orderRecords,
         );
       case DirectorSection.menu:
         return _DirectorMenuScreen(
@@ -477,21 +395,17 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
           onUpdateItem: _updateMenuItem,
           onAddItem: _addMenuItem,
           onDeleteItem: _deleteMenuItem,
-          onAddCategory: _addMenuCategory,
-          onRenameCategory: _renameMenuCategory,
-          onDeleteCategory: _deleteMenuCategory,
+          onAddCategory: _addCategory,
+          onRenameCategory: _updateCategory,
+          onDeleteCategory: _deleteCategory,
         );
       case DirectorSection.reports:
         return _DirectorReportsScreen(
-          director: _currentProfile,
-          report: demoSalesReport,
+          onFetchRevenue: (p) => _apiClient.fetchRevenueReport(_accessToken!, period: p),
+          onFetchWaiters: (p) => _apiClient.fetchWaitersReport(_accessToken!, period: p),
         );
       case DirectorSection.profile:
-        return _ProfileScreen(
-          login: _currentLogin,
-          profile: _currentProfile,
-          onLogout: _logout,
-        );
+        return _ProfileScreen(login: _currentLogin, profile: _currentProfile!, onLogout: _logout);
     }
   }
 }

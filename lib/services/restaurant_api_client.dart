@@ -25,7 +25,7 @@ class ApiSession {
 
 class RestaurantApiClient {
   RestaurantApiClient({this.baseUrl = backendApiBaseUrl}) {
-    _client.connectionTimeout = const Duration(milliseconds: 600);
+    _client.connectionTimeout = const Duration(seconds: 10);
   }
 
   final String baseUrl;
@@ -38,8 +38,14 @@ class RestaurantApiClient {
     String path, {
     String? token,
     Object? body,
+    Map<String, String>? queryParams,
   }) async {
-    final request = await _client.openUrl(method, _uri(path));
+    var uri = _uri(path);
+    if (queryParams != null && queryParams.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParams);
+    }
+
+    final request = await _client.openUrl(method, uri);
     request.headers.contentType = ContentType.json;
     if (token != null) {
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
@@ -51,152 +57,348 @@ class RestaurantApiClient {
     final response = await request.close();
     final responseText = await response.transform(utf8.decoder).join();
     final data = responseText.isEmpty ? null : jsonDecode(responseText);
+    
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw RestaurantApiException(
-        data is Map && data['detail'] != null
-            ? data['detail'].toString()
-            : 'Backend xatosi: ${response.statusCode}',
-      );
+      String errorMessage = 'Backend xatosi: ${response.statusCode}';
+      if (data is Map) {
+        if (data['detail'] != null) {
+          errorMessage = data['detail'].toString();
+        } else if (data['message'] != null) {
+          errorMessage = data['message'].toString();
+        } else if (data.isNotEmpty) {
+          errorMessage = data.toString();
+        }
+      }
+      throw RestaurantApiException(errorMessage);
     }
     return data;
   }
 
+  // ---- Auth ----
+
   Future<ApiSession> login(String username, String password) async {
-    final auth =
-        await _request(
-              'POST',
-              '/auth/login/',
-              body: {'username': username, 'password': password},
-            )
-            as Map<String, dynamic>;
+    final auth = await _request(
+      'POST',
+      '/v1/auth/login/',
+      body: {'username': username, 'password': password},
+    ) as Map<String, dynamic>;
+
     final access = auth['access']?.toString();
     final refresh = auth['refresh']?.toString();
     if (access == null || refresh == null) {
       throw const RestaurantApiException('Backend token qaytarmadi.');
     }
 
-    final me =
-        await _request('GET', '/auth/me/', token: access)
-            as Map<String, dynamic>;
-    final role = _roleFromApi(me['role']?.toString());
+    final me = await fetchMe(access);
     return ApiSession(
       accessToken: access,
       refreshToken: refresh,
-      role: role,
-      profile: WaiterProfile(
-        name: me['full_name']?.toString() ?? username,
-        position: role == UserRole.director ? 'Direktor' : 'Ofitsant',
+      role: me['role'],
+      profile: me['profile'],
+    );
+  }
+
+  Future<Map<String, dynamic>> fetchMe(String token) async {
+    final me = await _request('GET', '/v1/auth/me/', token: token) as Map<String, dynamic>;
+    final role = _roleFromApi(me['role']?.toString());
+    return {
+      'role': role,
+      'profile': WaiterProfile(
+        name: me['full_name']?.toString() ?? '',
+        position: role == UserRole.director ? 'Direktor' : (role == UserRole.cashier ? 'Kassir' : 'Ofitsant'),
         shift: me['shift']?.toString() ?? '',
         phone: me['phone']?.toString() ?? '',
         experience: me['experience']?.toString() ?? '',
       ),
-    );
+    };
   }
 
+  // ---- Tables ----
+
   Future<List<TableInfo>> fetchTables(String token) async {
-    final data = await _request('GET', '/staff/tables/', token: token);
+    final data = await _request('GET', '/v1/waiter/all-tables/', token: token);
     final rows = _results(data);
     return rows.map((row) {
       final item = row as Map<String, dynamic>;
       return TableInfo(
         id: item['id'] as int,
+        number: item['number'] as int?,
         seats: item['seats'] as int? ?? 4,
         location: item['location']?.toString() ?? '',
-        isBusy: item['is_busy'] as bool? ?? false,
+        status: item['status']?.toString() ?? 'free',
+        assignedWaiters: List<Map<String, dynamic>>.from(item['assigned_waiters'] ?? []),
       );
     }).toList();
   }
 
-  Future<List<MenuItemData>> fetchMenuItems(String token) async {
-    final data = await _request(
-      'GET',
-      '/staff/menu/items/?is_active=true',
-      token: token,
-    );
+  Future<void> joinTable(String token, int tableId) async {
+    await _request('POST', '/v1/tables/$tableId/join/', token: token);
+  }
+
+  // ---- Categories ----
+
+  Future<List<MenuCategory>> fetchCategories(String token) async {
+    final data = await _request('GET', '/v1/menu/categories/', token: token);
     final rows = _results(data);
     return rows.map((row) {
       final item = row as Map<String, dynamic>;
-      final category = item['category_name']?.toString() ?? 'Menyu';
-      return MenuItemData(
+      return MenuCategory(
         id: item['id'] as int,
         name: item['name']?.toString() ?? '',
-        category: category,
-        description: item['description']?.toString() ?? '',
-        price: double.parse(item['price'].toString()).round(),
-        icon: _iconForCategory(category),
-        color: _colorForCategory(category),
+        sortOrder: item['sort_order'] as int? ?? 0,
       );
     }).toList();
   }
 
-  Future<int> createOrder({
-    required String token,
-    required int tableId,
-    required List<Map<String, Object>> orderItems,
-  }) async {
-    final data =
-        await _request(
-              'POST',
-              '/staff/orders/',
-              token: token,
-              body: {
-                'table_id': tableId,
-                'note': '',
-                'order_items': orderItems,
-              },
-            )
-            as Map<String, dynamic>;
-    return data['id'] as int;
+  Future<MenuCategory> createCategory(String token, String name, int sortOrder) async {
+    final data = await _request(
+      'POST',
+      '/v1/menu/categories/',
+      token: token,
+      body: {'name': name, 'sort_order': sortOrder},
+    ) as Map<String, dynamic>;
+    return MenuCategory(
+      id: data['id'] as int,
+      name: data['name']?.toString() ?? '',
+      sortOrder: data['sort_order'] as int? ?? 0,
+    );
   }
 
-  Future<List<OrderRecord>> fetchOrders(
-    String token,
-    List<MenuItemData> menuItems,
-  ) async {
-    final data = await _request('GET', '/staff/orders/', token: token);
+  Future<void> updateCategory(String token, int id, String name, int sortOrder) async {
+    await _request(
+      'PATCH',
+      '/v1/menu/categories/$id/',
+      token: token,
+      body: {'name': name, 'sort_order': sortOrder},
+    );
+  }
+
+  Future<void> deleteCategory(String token, int id) async {
+    await _request('DELETE', '/v1/menu/categories/$id/', token: token);
+  }
+
+  // ---- Menu Items ----
+
+  Future<List<MenuItemData>> fetchMenuItems(String token) async {
+    final data = await _request('GET', '/v1/menu/items/', token: token);
+    final rows = _results(data);
+    return rows.map((row) {
+      final item = row as Map<String, dynamic>;
+      final categoryName = item['category_name']?.toString() ?? 'Boshqa';
+      return MenuItemData(
+        id: item['id'] as int,
+        name: item['name']?.toString() ?? '',
+        category: categoryName,
+        categoryId: item['category_id'] as int?,
+        description: item['description']?.toString() ?? '',
+        price: double.parse(item['price'].toString()).round(),
+        icon: _iconForCategory(categoryName),
+        color: _colorForCategory(categoryName),
+        isActive: item['is_active'] as bool? ?? true,
+        remainingToday: item['remaining_today'] as int?,
+        isAvailable: item['is_available'] as bool? ?? true,
+        imageUrl: item['image_url']?.toString(),
+      );
+    }).toList();
+  }
+
+  Future<void> createMenuItem(String token, Map<String, dynamic> data) async {
+    await _request('POST', '/v1/menu/items/', token: token, body: data);
+  }
+
+  Future<void> updateMenuItem(String token, int id, Map<String, dynamic> data) async {
+    await _request('PATCH', '/v1/menu/items/$id/', token: token, body: data);
+  }
+
+  Future<void> deleteMenuItem(String token, int id) async {
+    await _request('DELETE', '/v1/menu/items/$id/', token: token);
+  }
+
+  // ---- Orders ----
+
+  Future<List<OrderRecord>> fetchOrders(String token, List<MenuItemData> menuItems) async {
+    final data = await _request('GET', '/v1/orders/', token: token);
     final rows = _results(data);
     final menuById = {for (final item in menuItems) item.id: item};
     final records = <OrderRecord>[];
+    
     for (final row in rows) {
       final order = row as Map<String, dynamic>;
       final orderId = order['id'] as int;
       final table = order['table'] as Map<String, dynamic>?;
       final waiter = order['waiter'] as Map<String, dynamic>?;
-      final status = order['status']?.toString() == 'rejected'
-          ? OrderStatus.rejected
-          : OrderStatus.active;
-      final items = order['items'] as List<dynamic>? ?? const <dynamic>[];
+      final items = order['items'] as List<dynamic>? ?? [];
+      
       for (final rawItem in items) {
         final item = rawItem as Map<String, dynamic>;
-        final menuId = item['menu_item'] as int?;
+        final menuId = item['menu_item_id'] as int?;
         final menuItem = menuById[menuId];
-        records.add(
-          OrderRecord(
-            id: orderId,
-            waiterLogin: waiter?['username']?.toString() ?? '',
-            tableId: table?['id'] as int? ?? 0,
-            itemName:
-                item['menu_item_name']?.toString() ?? menuItem?.name ?? 'Taom',
-            quantity: item['quantity'] as int? ?? 1,
-            note: item['note']?.toString() ?? '',
-            icon: menuItem?.icon ?? Icons.restaurant,
-            color: menuItem?.color ?? const Color(0xFFEFE3D6),
-            status: status,
-          ),
-        );
+        
+        records.add(OrderRecord(
+          id: orderId,
+          waiterLogin: waiter?['username']?.toString() ?? '',
+          tableId: table?['id'] as int? ?? 0,
+          tableNumber: table?['number'] as int?,
+          itemName: item['menu_item_name']?.toString() ?? menuItem?.name ?? 'Taom',
+          quantity: item['quantity'] as int? ?? 1,
+          note: item['note']?.toString() ?? '',
+          icon: menuItem?.icon ?? Icons.restaurant,
+          color: menuItem?.color ?? const Color(0xFFEFE3D6),
+          status: _orderStatusFromApi(order['status']?.toString()),
+        ));
       }
     }
     return records;
   }
 
-  Future<void> rejectOrder(String token, int orderId) async {
-    await _request('POST', '/staff/orders/$orderId/reject/', token: token);
+  Future<int> createOrder({
+    required String token,
+    required int tableId,
+    required List<Map<String, dynamic>> items,
+    String note = '',
+  }) async {
+    final data = await _request(
+      'POST',
+      '/v1/orders/',
+      token: token,
+      body: {
+        'table_id': tableId,
+        'note': note,
+        'items': items,
+      },
+    ) as Map<String, dynamic>;
+    return data['id'] as int;
   }
 
+  Future<void> rejectOrder(String token, int orderId, {String reason = 'Rad etildi'}) async {
+    await _request(
+      'POST', 
+      '/v1/orders/$orderId/reject/', 
+      token: token,
+      body: {'reason': reason},
+    );
+  }
+
+  Future<void> cancelOrder(String token, int orderId, {String reason = 'Bekor qilindi'}) async {
+    await _request(
+      'POST', 
+      '/v1/orders/$orderId/cancel/', 
+      token: token,
+      body: {'reason': reason},
+    );
+  }
+
+  // ---- Director ----
+
+  Future<DashboardSummary> fetchDashboardSummary(String token) async {
+    final data = await _request('GET', '/v1/dashboard/summary/', token: token) as Map<String, dynamic>;
+    final tables = data['tables'] as Map<String, dynamic>;
+    final orders = data['orders'] as Map<String, dynamic>;
+    final payments = data['payments'] as Map<String, dynamic>;
+    final staff = data['staff'] as Map<String, dynamic>;
+
+    return DashboardSummary(
+      totalTables: tables['total'] as int,
+      freeTables: tables['free'] as int,
+      busyTables: tables['busy'] as int,
+      assignedTables: tables['assigned'] as int,
+      activeOrders: orders['active'] as int,
+      rejectedOrders: orders['rejected'] as int,
+      paidTodayOrders: orders['paid_today'] as int,
+      cashToday: (double.parse(payments['cash_today'].toString())).round(),
+      cardToday: (double.parse(payments['card_today'].toString())).round(),
+      totalToday: (double.parse(payments['total_today'].toString())).round(),
+      activeWaiters: staff['active_waiters'] as int,
+    );
+  }
+
+  Future<List<WaiterInfo>> fetchWaiters(String token) async {
+    final data = await _request('GET', '/v1/director/waiters/', token: token);
+    final rows = data as List<dynamic>;
+    return rows.map((row) {
+      final item = row as Map<String, dynamic>;
+      return WaiterInfo(
+        id: item['id'] as int,
+        username: item['username']?.toString() ?? '',
+        fullName: item['full_name']?.toString() ?? '',
+        phone: item['phone']?.toString() ?? '',
+        shift: item['shift']?.toString() ?? '',
+        experience: item['experience']?.toString() ?? '',
+        tables: List<int>.from(item['tables'] ?? []),
+        activeOrdersCount: item['active_orders_count'] as int? ?? 0,
+        rejectedOrdersCount: item['rejected_orders_count'] as int? ?? 0,
+      );
+    }).toList();
+  }
+
+  Future<void> createWaiter(String token, Map<String, dynamic> data) async {
+    await _request('POST', '/v1/director/waiters/', token: token, body: data);
+  }
+
+  Future<void> updateWaiter(String token, int id, Map<String, dynamic> data) async {
+    await _request('PATCH', '/v1/director/waiters/$id/', token: token, body: data);
+  }
+
+  Future<void> deleteWaiter(String token, int id) async {
+    await _request('DELETE', '/v1/director/waiters/$id/', token: token);
+  }
+
+  Future<RevenueReport> fetchRevenueReport(String token, {String period = 'daily'}) async {
+    final data = await _request(
+      'GET', 
+      '/v1/director/reports/revenue/', 
+      token: token,
+      queryParams: {'period': period},
+    ) as Map<String, dynamic>;
+    
+    final totals = data['totals'] as Map<String, dynamic>;
+    final breakdown = data['daily_breakdown'] as List<dynamic>;
+
+    return RevenueReport(
+      period: data['period']?.toString() ?? period,
+      cashTotal: (double.parse(totals['cash'].toString())).round(),
+      cardTotal: (double.parse(totals['card'].toString())).round(),
+      grandTotal: (double.parse(totals['total'].toString())).round(),
+      dailyBreakdown: breakdown.map((b) {
+        final item = b as Map<String, dynamic>;
+        return DailyBreakdown(
+          date: item['date']?.toString() ?? '',
+          cash: (double.parse(item['cash'].toString())).round(),
+          card: (double.parse(item['card'].toString())).round(),
+          total: (double.parse(item['total'].toString())).round(),
+        );
+      }).toList(),
+    );
+  }
+
+  Future<List<WaiterReportItem>> fetchWaitersReport(String token, {String period = 'daily'}) async {
+    final data = await _request(
+      'GET', 
+      '/v1/director/reports/waiters/', 
+      token: token,
+      queryParams: {'period': period},
+    ) as Map<String, dynamic>;
+    
+    final waiters = data['waiters'] as List<dynamic>;
+    return waiters.map((w) {
+      final item = w as Map<String, dynamic>;
+      return WaiterReportItem(
+        id: item['id'] as int,
+        fullName: item['full_name']?.toString() ?? '',
+        soldOrders: item['sold_orders'] as int? ?? 0,
+        rejectedOrders: item['rejected_orders'] as int? ?? 0,
+        cancelledOrders: item['cancelled_orders'] as int? ?? 0,
+        revenue: (double.parse(item['revenue'].toString())).round(),
+      );
+    }).toList();
+  }
+
+  // ---- Helpers ----
+
   static UserRole _roleFromApi(String? role) {
-    return role == 'director' || role == 'cashier'
-        ? UserRole.director
-        : UserRole.waiter;
+    if (role == 'director') return UserRole.director;
+    if (role == 'cashier') return UserRole.cashier;
+    return UserRole.waiter;
   }
 
   static List<dynamic> _results(dynamic data) {

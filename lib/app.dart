@@ -13,7 +13,7 @@ part 'widgets/common_widgets.dart';
 
 const backendApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8000/api',
+  defaultValue: 'https://kassa-production.up.railway.app/api',
 );
 
 class AndijanFlutterApp extends StatelessWidget {

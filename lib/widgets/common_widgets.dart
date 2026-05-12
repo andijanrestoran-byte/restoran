@@ -213,47 +213,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _InsightCard extends StatelessWidget {
-  const _InsightCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-  });
-
-  final String title;
-  final String value;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _ProfileInfoCard extends StatelessWidget {
   const _ProfileInfoCard({required this.label, required this.value});
@@ -285,15 +244,14 @@ class _ProfileInfoCard extends StatelessWidget {
 }
 
 class _AvatarBadge extends StatelessWidget {
-  const _AvatarBadge({required this.login, this.radius = 18});
+  const _AvatarBadge({required this.name, required this.login, this.radius = 18});
 
+  final String name;
   final String login;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
-    final profile = waiterAccounts[login]?.profile;
-    final name = profile?.name ?? login;
     final initials = name
         .split(' ')
         .where((part) => part.isNotEmpty)
@@ -306,7 +264,7 @@ class _AvatarBadge extends StatelessWidget {
       radius: radius,
       backgroundColor: _avatarColor(login),
       child: Text(
-        initials,
+        initials.isEmpty ? '?' : initials,
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -421,6 +379,3 @@ Color _avatarColor(String login) {
       palette.length];
 }
 
-String waiterNameByLogin(String login) {
-  return waiterAccounts[login]?.profile.name ?? login;
-}
