@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stol #{{ table.number }} cheki</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 360px; margin: 0 auto; padding: 16px; }
+        .row { display: flex; justify-content: space-between; gap: 8px; margin: 4px 0; }
+        .line { border-top: 1px dashed #999; margin: 10px 0; }
+        @media print { button, a { display: none; } body { padding: 0; } }
+    </style>
+</head>
+<body>
+    <h2>ANDIJAN</h2>
+    <div>Stol #{{ table.number }}</div>
+    {% if table.location %}<div>{{ table.location }}</div>{% endif %}
+    <div class="line"></div>
+    <div class="row"><span>Buyurtmalar</span><strong>{{ orders_count }}</strong></div>
+    <div class="row"><span>Mahsulotlar</span><strong>{{ items_count }}</strong></div>
+    <div class="line"></div>
+        {% for order in active_orders %}
+            <div><strong>#{{ order.id }}</strong> - {{ order.total_amount }}</div>
+        {% for item in order.items.all %}
+            <div class="row"><span>{{ item.menu_item.name }} x{{ item.quantity }}</span><span>{{ item.line_total }}</span></div>
+            {% if item.note %}<div>{{ item.note }}</div>{% endif %}
+        {% endfor %}
+        <div class="line"></div>
+    {% empty %}
+        <div>Ochiq buyurtma yo‘q.</div>
+    {% endfor %}
+    <div class="row"><strong>JAMI</strong><strong>{{ total_amount }}</strong></div>
+    <p>
+        <button onclick="window.print()">Chop etish</button>
+        <a href="{% url 'orders:table_bill' table.pk %}">Orqaga</a>
+    </p>
+    {% if auto_print %}
+        <script>
+            window.addEventListener("load", function () { window.print(); });
+        </script>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Rad etilganlar{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Rad etilgan buyurtmalar</h1>
+        <p class="meta">Muammoli buyurtmalar ro‘yxati.</p>
+    </div>
+    <div class="stack">
+        {% for order in rejected_orders %}
+            <div class="card">
+                <div><span class="pill danger">Rad etilgan</span></div>
+                <h2>#{{ order.id }}</h2>
+                <div class="meta">Ofitsant: {{ order.waiter.staff_profile }} | Stol: #{{ order.table.number }}</div>
+                <div class="meta">Yangilangan: {{ order.updated_at|date:"H:i, d.m.Y" }}</div>
+                <div class="stat">{{ order.total_amount }}</div>
+                <a class="btn" href="{% url 'orders:order_detail' order.pk %}">Tafsilot</a>
+            </div>
+        {% empty %}
+            <div class="card">Rad etilgan buyurtmalar yo‘q.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

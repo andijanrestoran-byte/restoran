@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Stollar{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Stollar bo‘yicha hisob</h1>
+        <p class="meta">Har bir stol uchun aktiv buyurtmalar va umumiy summa.</p>
+    </div>
+    <div class="grid">
+        {% for entry in tables %}
+            <div class="card">
+                <h2>Stol #{{ entry.table.number }}</h2>
+                <div class="meta">{{ entry.table.location|default:"Zona belgilanmagan" }}</div>
+                <div class="meta">Faol buyurtmalar: {{ entry.orders_count }}</div>
+                <div class="meta">Mahsulotlar: {{ entry.items_count }}</div>
+                <div class="stat">{{ entry.total_amount }}</div>
+                <a class="btn" href="{% url 'orders:table_bill' entry.table.pk %}">Hisobni ochish</a>
+            </div>
+        {% empty %}
+            <div class="card">Stollar topilmadi.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

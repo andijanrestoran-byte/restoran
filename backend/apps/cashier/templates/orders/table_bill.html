@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Stol #{{ table.number }}{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Stol #{{ table.number }} hisobi</h1>
+        <p class="meta">{{ table.location|default:"Zona belgilanmagan" }}</p>
+    </div>
+
+    <div class="card">
+        <div class="meta">Faol buyurtmalar: {{ orders_count }} | Mahsulotlar: {{ items_count }}</div>
+        <div class="stat">{{ total_amount }}</div>
+        <div style="margin-top:14px;">
+            <a class="btn" href="{% url 'orders:table_print' table.pk %}" target="_blank" rel="noopener">Chek</a>
+            <form class="inline" method="post" action="{% url 'orders:close_table' table.pk %}">
+                {% csrf_token %}
+                <button class="btn" type="submit">Stolni yopish</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="stack">
+        {% for order in active_orders %}
+            <div class="card">
+                <h2>Buyurtma #{{ order.id }}</h2>
+                <div class="meta">Ofitsant: {{ order.waiter.staff_profile }}</div>
+                <div class="meta">Yaratilgan: {{ order.created_at|date:"H:i, d.m.Y" }}</div>
+                <ul>
+                    {% for item in order.items.all %}
+                        <li>
+                            {{ item.menu_item.name }} x{{ item.quantity }} - {{ item.line_total }}
+                            {% if item.note %}<br><span class="meta">Izoh: {{ item.note }}</span>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% empty %}
+            <div class="card">Bu stol bo‘yicha ochiq buyurtma yo‘q.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

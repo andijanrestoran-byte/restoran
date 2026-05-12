@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Kirish{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Kassir kirishi</h1>
+        <p class="meta">Buyurtmalar paneliga kirish uchun login va parolni kiriting.</p>
+    </div>
+    <div class="card" style="max-width:420px;">
+        {% if form.errors %}
+            <p class="danger">Login yoki parol noto'g'ri.</p>
+        {% endif %}
+        <form method="post" class="form-grid">
+            {% csrf_token %}
+            <div>
+                <label for="id_username">Login</label>
+                <input id="id_username" type="text" name="username" required>
+            </div>
+            <div>
+                <label for="id_password">Parol</label>
+                <input id="id_password" type="password" name="password" required>
+            </div>
+            <button class="btn" type="submit">Kirish</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Buyurtma #{{ order.id }}{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Buyurtma #{{ order.id }}</h1>
+        <p class="meta">Ofitsant: {{ order.waiter.staff_profile }} | Stol: #{{ order.table.number }}</p>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mahsulot</th>
+                    <th>Kategoriya</th>
+                    <th>Miqdor</th>
+                    <th>Narx</th>
+                    <th>Jami</th>
+                    <th>Amal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                    <tr>
+                        <td>{{ item.menu_item.name }}</td>
+                        <td>{{ item.menu_item.category.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.unit_price }}</td>
+                        <td>{{ item.line_total }}</td>
+                        <td>
+                            {% if item.note %}
+                                <div class="meta" style="margin-bottom:8px;">Izoh: {{ item.note }}</div>
+                            {% endif %}
+                            <form class="inline" method="post" action="{% url 'orders:reject_item' order.pk item.pk %}">
+                                {% csrf_token %}
+                                <button class="btn" type="submit">Rad etish</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

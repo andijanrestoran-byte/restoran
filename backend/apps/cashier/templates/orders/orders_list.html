@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Buyurtmalar{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Faol buyurtmalar</h1>
+        <p class="meta">Faqat faol buyurtmalar ko‘rsatiladi.</p>
+    </div>
+    <div class="stack">
+        {% for order in orders %}
+            <div class="card">
+                <div class="stack">
+                    <div><span class="pill warn">{{ order.get_status_display }}</span></div>
+                    <h2>#{{ order.id }}</h2>
+                    <div class="meta">Ofitsant: {{ order.waiter.staff_profile }} | Stol: #{{ order.table.number }}{% if order.table.location %} / {{ order.table.location }}{% endif %}</div>
+                    <div class="meta">Yaratilgan: {{ order.created_at|date:"H:i, d.m.Y" }}</div>
+                    <div class="stat">{{ order.total_amount }}</div>
+                    <div>
+                        <a class="btn" href="{% url 'orders:order_detail' order.pk %}">Tafsilot</a>
+                        <a class="btn" href="{% url 'orders:table_bill' order.table.pk %}">Stol hisobi</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="card">Hozircha faol buyurtmalar yo‘q.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

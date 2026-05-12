@@ -53,6 +53,29 @@ void main() {
     expect(find.text('Andijan Restoran'), findsOneWidget);
   });
 
+  testWidgets('waiter can add optional note to a menu item', (tester) async {
+    await tester.pumpWidget(const AndijanFlutterApp());
+
+    await loginAs(tester, 'azizbek', '12345');
+    await tester.tap(find.byKey(const Key('table_card_1')));
+    await tester.pumpAndSettle();
+
+    await pressFilledButtonByKey(tester, 'increase_item_1');
+    await tester.enterText(
+      find.byKey(const Key('note_item_1')),
+      'Achchiqsiz qilib bering',
+    );
+    await pressFilledButtonByKey(tester, 'submit_order');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buyurtmalar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Izoh: Achchiqsiz qilib bering'), findsOneWidget);
+  });
+
   testWidgets('director can see waiter orders and reject them', (tester) async {
     await tester.pumpWidget(const AndijanFlutterApp());
 

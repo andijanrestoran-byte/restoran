@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Boshqaruv{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Kassir boshqaruv paneli</h1>
+        <p class="meta">Mobil ilovadan kelgan buyurtmalarni, stol hisoblarini va rad etilgan buyurtmalarni shu yerda boshqarasiz.</p>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="meta">Faol buyurtmalar</div>
+            <div class="stat">{{ active_orders_count }}</div>
+            <a class="btn" href="{% url 'orders:orders_list' %}">Ochish</a>
+        </div>
+        <div class="card">
+            <div class="meta">Rad etilganlar</div>
+            <div class="stat">{{ rejected_orders_count }}</div>
+            <a class="btn" href="{% url 'orders:rejected_orders' %}">Ochish</a>
+        </div>
+        <div class="card">
+            <div class="meta">Stollar</div>
+            <div class="stat">{{ tables_count }}</div>
+            <a class="btn" href="{% url 'orders:tables_overview' %}">Ochish</a>
+        </div>
+    </div>
+{% endblock %}

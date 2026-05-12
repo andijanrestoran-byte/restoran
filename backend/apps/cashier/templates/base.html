@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Kassa paneli{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #1f2937; }
+        .shell { max-width: 1180px; margin: 0 auto; padding: 24px; }
+        .nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        .nav a, .btn { text-decoration: none; border: 1px solid #d1d5db; background: white; color: #111827; padding: 10px 14px; border-radius: 10px; display: inline-block; }
+        .nav a.active { background: #111827; color: white; }
+        .hero, .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,.06); margin-bottom: 18px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .stack { display: grid; gap: 10px; }
+        .meta { color: #6b7280; font-size: 14px; }
+        .stat { font-size: 28px; font-weight: 700; }
+        .danger { color: #b91c1c; }
+        .warn { color: #b45309; }
+        .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #e5e7eb; font-size: 12px; }
+        form.inline { display: inline; }
+        input { padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; width: 100%; }
+        .form-grid { display: grid; gap: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        {% if request.user.is_authenticated %}
+            <div class="nav">
+                <a href="{% url 'orders:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Boshqaruv</a>
+                <a href="{% url 'orders:orders_list' %}" class="{% if request.resolver_match.url_name == 'orders_list' or request.resolver_match.url_name == 'order_detail' %}active{% endif %}">Buyurtmalar</a>
+                <a href="{% url 'orders:rejected_orders' %}" class="{% if request.resolver_match.url_name == 'rejected_orders' %}active{% endif %}">Rad etilganlar</a>
+                <a href="{% url 'orders:tables_overview' %}" class="{% if request.resolver_match.url_name == 'tables_overview' or request.resolver_match.url_name == 'table_bill' %}active{% endif %}">Stollar</a>
+                <a href="{% url 'logout' %}">Chiqish</a>
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
