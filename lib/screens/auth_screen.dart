@@ -82,13 +82,6 @@ class _LoginScreen extends StatelessWidget {
                       child: Text(isLoading ? 'Tekshirilmoqda...' : 'Kirish'),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    "Hisoblar: azizbek/12345, javohir/11111, dilshod/22222, sardor/33333, direktor/99999",
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
                 ],
               ),
             ),
