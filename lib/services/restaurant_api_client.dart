@@ -303,7 +303,7 @@ class RestaurantApiClient {
     final body = <String, dynamic>{
       'table_id': tableId,
       'note': note,
-      'order_items': items,
+      'items': items,
     };
     if (billNumber != null) body['bill_number'] = billNumber;
     final data =
@@ -473,7 +473,7 @@ class RestaurantApiClient {
   // ---- Payments & Cashier ----
 
   Future<List<Map<String, dynamic>>> fetchPayments(String token) async {
-    final data = await _request('GET', '/v1/cashier/payments', token: token);
+    final data = await _request('GET', '/v1/payments', token: token);
     return List<Map<String, dynamic>>.from(_results(data));
   }
 
@@ -500,7 +500,7 @@ class RestaurantApiClient {
       'POST',
       '/v1/cashier/tables/$tableId/close',
       token: token,
-      body: {'payment_method': method, 'amount': amount},
+      body: {'payment_method': method},
     );
   }
 

@@ -35,6 +35,19 @@ class _LoginScreenState extends State<_LoginScreen> {
   }
 
   @override
+  void didUpdateWidget(_LoginScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_usernameController.text != widget.loginInput &&
+        widget.loginInput.isNotEmpty) {
+      _usernameController.text = widget.loginInput;
+    }
+    if (_passwordController.text != widget.passwordInput &&
+        widget.passwordInput.isNotEmpty) {
+      _passwordController.text = widget.passwordInput;
+    }
+  }
+
+  @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
@@ -50,7 +63,9 @@ class _LoginScreenState extends State<_LoginScreen> {
           constraints: const BoxConstraints(maxWidth: 420),
           child: Card(
             elevation: 8,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
@@ -63,7 +78,11 @@ class _LoginScreenState extends State<_LoginScreen> {
                       color: const Color(0xFF8A4B2A).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.restaurant_menu, color: Color(0xFF8A4B2A), size: 32),
+                    child: const Icon(
+                      Icons.restaurant_menu,
+                      color: Color(0xFF8A4B2A),
+                      size: 32,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -88,7 +107,9 @@ class _LoginScreenState extends State<_LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'Login',
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
@@ -101,7 +122,9 @@ class _LoginScreenState extends State<_LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'Parol',
                       prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                     ),
@@ -116,12 +139,19 @@ class _LoginScreenState extends State<_LoginScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               widget.errorText,
-                              style: const TextStyle(color: Colors.red, fontSize: 14),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -134,13 +164,21 @@ class _LoginScreenState extends State<_LoginScreen> {
                     height: 56,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         backgroundColor: const Color(0xFF8A4B2A),
                       ),
                       onPressed: widget.isLoading ? null : widget.onSubmit,
-                      child: widget.isLoading 
-                        ? const CircularProgressIndicator(color: Colors.white) 
-                        : const Text('Kirish', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: widget.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Kirish',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],

@@ -9,7 +9,7 @@ class RestaurantHomePage extends StatefulWidget {
 
 class _RestaurantHomePageState extends State<RestaurantHomePage> {
   final RestaurantApiClient _apiClient = RestaurantApiClient();
-  
+
   List<TableInfo> _tables = [];
   List<MenuItemData> _menuItems = [];
   List<MenuCategory> _menuCategories = [];
@@ -51,9 +51,9 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       _currentLogin = login;
       _currentRole = session.role;
       _currentProfile = session.profile;
-      
+
       await _loadData();
-      
+
       setState(() {
         _isLoggedIn = true;
         _isLoading = false;
@@ -69,14 +69,15 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   Future<void> _loadData() async {
     if (_accessToken == null) return;
     final token = _accessToken!;
-    
+
     try {
       final tables = await _apiClient.fetchTables(token);
       final categories = await _apiClient.fetchCategories(token);
       final items = await _apiClient.fetchMenuItems(token);
-      
+
       List<OrderRecord> orders = [];
-      if (_currentRole == UserRole.waiter || _currentRole == UserRole.director) {
+      if (_currentRole == UserRole.waiter ||
+          _currentRole == UserRole.director) {
         orders = await _apiClient.fetchOrders(token, items);
       }
 
@@ -117,8 +118,9 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   void _selectTable(int tableId) {
     final table = _tables.firstWhere((t) => t.id == tableId);
     final assigned = table.assignedWaiters;
-    
-    if (assigned.isEmpty || assigned.any((w) => w['username'] == _currentLogin)) {
+
+    if (assigned.isEmpty ||
+        assigned.any((w) => w['username'] == _currentLogin)) {
       setState(() {
         _selectedTableId = tableId;
         _selectedBillNumber = 1;
@@ -137,9 +139,14 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text("Stol #$tableId band"),
-        content: Text("Bu stolda ${assigned.map((w) => w['full_name']).join(', ')} ishlayapti. Siz ham qo'shilmoqchimisiz?"),
+        content: Text(
+          "Bu stolda ${assigned.map((w) => w['full_name']).join(', ')} ishlayapti. Siz ham qo'shilmoqchimisiz?",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Yo\'q')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Yo\'q'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -163,7 +170,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
         _orderStep = OrderStep.menu;
       });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -180,7 +190,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
 
   Future<void> _submitOrder() async {
     if (_accessToken == null || _selectedTableId == null) return;
-    
+
     final items = <Map<String, dynamic>>[];
     _quantitiesByItemId.forEach((id, q) {
       if (q > 0) {
@@ -207,9 +217,15 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       _selectedTableId = null;
       _orderStep = OrderStep.tables;
       await _loadData();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buyurtma yuborildi')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Buyurtma yuborildi')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -223,7 +239,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createCategory(_accessToken!, name, sortOrder);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -233,7 +252,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateCategory(_accessToken!, id, name, sortOrder);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -243,7 +265,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteCategory(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -253,7 +278,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createMenuItem(_accessToken!, data);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -263,7 +291,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateMenuItem(_accessToken!, id, data);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -273,7 +304,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteMenuItem(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -283,7 +317,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.rejectOrder(_accessToken!, orderId);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -293,7 +330,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createWaiter(_accessToken!, data);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -303,7 +343,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateWaiter(_accessToken!, id, data);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
@@ -313,21 +356,28 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteWaiter(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Xato: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_isLoggedIn) {
-      return _LoginScreen(
-        loginInput: _loginInput,
-        passwordInput: _passwordInput,
-        errorText: _loginError,
-        isLoading: _isLoading,
-        onLoginChanged: (val) => setState(() => _loginInput = val),
-        onPasswordChanged: (val) => setState(() => _passwordInput = val),
-        onSubmit: _login,
+      return Scaffold(
+        body: SafeArea(
+          child: _LoginScreen(
+            loginInput: _loginInput,
+            passwordInput: _passwordInput,
+            errorText: _loginError,
+            isLoading: _isLoading,
+            onLoginChanged: (val) => setState(() => _loginInput = val),
+            onPasswordChanged: (val) => setState(() => _passwordInput = val),
+            onSubmit: _login,
+          ),
+        ),
       );
     }
 
@@ -335,11 +385,16 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadData,
-          child: _currentRole == UserRole.director ? _buildDirectorBody() : _buildWaiterBody(),
+          child: _currentRole == UserRole.director
+              ? _buildDirectorBody()
+              : _buildWaiterBody(),
         ),
       ),
       bottomNavigationBar: _currentRole == UserRole.director
-          ? _DirectorBottomBar(currentSection: _directorSection, onSelect: (s) => setState(() => _directorSection = s))
+          ? _DirectorBottomBar(
+              currentSection: _directorSection,
+              onSelect: (s) => setState(() => _directorSection = s),
+            )
           : _WaiterBottomBar(
               currentSection: _waiterSection,
               onSelect: (s) => setState(() {
@@ -352,13 +407,20 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
 
   Widget _buildWaiterBody() {
     if (_waiterSection == WaiterSection.profile) {
-      return _ProfileScreen(login: _currentLogin, profile: _currentProfile!, onLogout: _logout);
+      return _ProfileScreen(
+        login: _currentLogin,
+        profile: _currentProfile!,
+        onLogout: _logout,
+      );
     }
-    
+
     if (_waiterSection == WaiterSection.activeOrders) {
-      return _ActiveOrdersScreen(orders: _orderRecords, currentLogin: _currentLogin);
+      return _ActiveOrdersScreen(
+        orders: _orderRecords,
+        currentLogin: _currentLogin,
+      );
     }
-    
+
     if (_orderStep == OrderStep.tables) {
       return _TableSelectionScreen(
         waiter: _currentProfile!,
@@ -388,7 +450,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   Widget _buildDirectorBody() {
     switch (_directorSection) {
       case DirectorSection.dashboard:
-        return _DirectorDashboardScreen(director: _currentProfile!, summary: _summary!, tables: _tables);
+        return _DirectorDashboardScreen(
+          director: _currentProfile!,
+          summary: _summary!,
+          tables: _tables,
+        );
       case DirectorSection.waiters:
         return _DirectorWaitersScreen(
           waiters: _waiters,
@@ -411,11 +477,17 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
         );
       case DirectorSection.reports:
         return _DirectorReportsScreen(
-          onFetchRevenue: (p) => _apiClient.fetchRevenueReport(_accessToken!, period: p),
-          onFetchWaiters: (p) => _apiClient.fetchWaitersReport(_accessToken!, period: p),
+          onFetchRevenue: (p) =>
+              _apiClient.fetchRevenueReport(_accessToken!, period: p),
+          onFetchWaiters: (p) =>
+              _apiClient.fetchWaitersReport(_accessToken!, period: p),
         );
       case DirectorSection.profile:
-        return _ProfileScreen(login: _currentLogin, profile: _currentProfile!, onLogout: _logout);
+        return _ProfileScreen(
+          login: _currentLogin,
+          profile: _currentProfile!,
+          onLogout: _logout,
+        );
     }
   }
 }
