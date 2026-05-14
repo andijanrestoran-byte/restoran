@@ -2,7 +2,7 @@ part of 'package:andijan_flutter/app.dart';
 
 enum UserRole { waiter, director, cashier }
 
-enum WaiterSection { orders, profile }
+enum WaiterSection { orders, activeOrders, profile }
 
 enum DirectorSection { dashboard, waiters, menu, reports, profile }
 
@@ -128,12 +128,14 @@ class OrderRecord {
     required this.color,
     required this.status,
     this.tableNumber,
+    this.billNumber,
   });
 
   final int id;
   final String waiterLogin;
   final int tableId;
   final int? tableNumber;
+  final int? billNumber;
   final String itemName;
   final int quantity;
   final String note;
@@ -147,6 +149,7 @@ class OrderRecord {
       waiterLogin: waiterLogin,
       tableId: tableId,
       tableNumber: tableNumber,
+      billNumber: billNumber,
       itemName: itemName,
       quantity: quantity,
       note: note,

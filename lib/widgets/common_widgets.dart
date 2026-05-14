@@ -14,9 +14,14 @@ class _WaiterBottomBar extends StatelessWidget {
     return _BottomBar(
       items: [
         _BottomBarItem(
-          label: 'Buyurtmalar',
+          label: 'Buyurtma',
           selected: currentSection == WaiterSection.orders,
           onTap: () => onSelect(WaiterSection.orders),
+        ),
+        _BottomBarItem(
+          label: 'Faol',
+          selected: currentSection == WaiterSection.activeOrders,
+          onTap: () => onSelect(WaiterSection.activeOrders),
         ),
         _BottomBarItem(
           label: 'Profil',
@@ -332,7 +337,7 @@ class _OrderHistoryCard extends StatelessWidget {
                           ),
                         ),
                       Text(
-                        'Stol #${order.tableId}',
+                        'Stol #${order.tableNumber ?? order.tableId}${order.billNumber != null ? " | Shot #${order.billNumber}" : ""}',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),

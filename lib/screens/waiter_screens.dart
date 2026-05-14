@@ -94,6 +94,8 @@ class _MenuOrderScreen extends StatefulWidget {
     required this.quantitiesByItemId,
     required this.notesByItemId,
     required this.isSubmitting,
+    required this.selectedBillNumber,
+    required this.onBillNumberChanged,
     required this.onBack,
     required this.onQuantityChanged,
     required this.onNoteChanged,
@@ -106,6 +108,8 @@ class _MenuOrderScreen extends StatefulWidget {
   final Map<int, int> quantitiesByItemId;
   final Map<int, String> notesByItemId;
   final bool isSubmitting;
+  final int selectedBillNumber;
+  final ValueChanged<int> onBillNumberChanged;
   final VoidCallback onBack;
   final void Function(int itemId, int delta) onQuantityChanged;
   final void Function(int itemId, String note) onNoteChanged;
@@ -141,11 +145,42 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Stol #$widget.tableId buyurtmasi', style: Theme.of(context).textTheme.headlineSmall),
-                    const Text("Taomlarni tanlang"),
+                    Text("Taomlarni tanlang | Shot #${widget.selectedBillNumber}"),
                   ],
                 ),
               ),
               TextButton(onPressed: widget.onBack, child: const Text('Stollar')),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Shotni tanlang (1-10):", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 10,
+                  itemBuilder: (context, index) {
+                    final billNum = index + 1;
+                    final isSelected = widget.selectedBillNumber == billNum;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text('$billNum-shot'),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) widget.onBillNumberChanged(billNum);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -247,6 +282,41 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ActiveOrdersScreen extends StatelessWidget {
+  const _ActiveOrdersScreen({
+    required this.orders,
+    required this.currentLogin,
+  });
+
+  final List<OrderRecord> orders;
+  final String currentLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final myOrders = orders.where((o) => o.waiterLogin == currentLogin).toList();
+    
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _HeroCard(
+          title: 'Faol buyurtmalar',
+          subtitle: 'Sizning joriy buyurtmalaringiz',
+          description: "Bu yerda siz o'zingizga biriktirilgan stollardagi buyurtmalar holatini ko'rishingiz mumkin.",
+          color: const Color(0xFF2B7A4B),
+        ),
+        const SizedBox(height: 16),
+        if (myOrders.isEmpty)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(40.0),
+            child: Text("Hozircha faol buyurtmalar yo'q"),
+          ))
+        else
+          ...myOrders.map((order) => _OrderHistoryCard(order: order)),
       ],
     );
   }

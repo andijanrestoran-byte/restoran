@@ -22,7 +22,7 @@ class AndijanFlutterApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Andijan Flutter',
+      title: 'DASTURXON',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

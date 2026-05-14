@@ -27,6 +27,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   DirectorSection _directorSection = DirectorSection.dashboard;
   OrderStep _orderStep = OrderStep.tables;
   int? _selectedTableId;
+  int _selectedBillNumber = 1;
 
   String _loginInput = '';
   String _passwordInput = '';
@@ -120,6 +121,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
     if (assigned.isEmpty || assigned.any((w) => w['username'] == _currentLogin)) {
       setState(() {
         _selectedTableId = tableId;
+        _selectedBillNumber = 1;
         _orderStep = OrderStep.menu;
       });
       if (assigned.isEmpty) {
@@ -157,6 +159,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _loadData();
       setState(() {
         _selectedTableId = tableId;
+        _selectedBillNumber = 1;
         _orderStep = OrderStep.menu;
       });
     } catch (e) {
@@ -196,6 +199,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createOrder(
         token: _accessToken!,
         tableId: _selectedTableId!,
+        billNumber: _selectedBillNumber,
         items: items,
       );
       _quantitiesByItemId.clear();
@@ -351,6 +355,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       return _ProfileScreen(login: _currentLogin, profile: _currentProfile!, onLogout: _logout);
     }
     
+    if (_waiterSection == WaiterSection.activeOrders) {
+      return _ActiveOrdersScreen(orders: _orderRecords, currentLogin: _currentLogin);
+    }
+    
     if (_orderStep == OrderStep.tables) {
       return _TableSelectionScreen(
         waiter: _currentProfile!,
@@ -368,6 +376,8 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       quantitiesByItemId: _quantitiesByItemId,
       notesByItemId: _notesByItemId,
       isSubmitting: _isLoading,
+      selectedBillNumber: _selectedBillNumber,
+      onBillNumberChanged: (val) => setState(() => _selectedBillNumber = val),
       onBack: () => setState(() => _orderStep = OrderStep.tables),
       onQuantityChanged: _changeMenuQuantity,
       onNoteChanged: _changeMenuItemNote,
