@@ -275,11 +275,13 @@ class _DirectorMenuScreenState extends State<_DirectorMenuScreen> {
               ),
               const SizedBox(height: 12),
               TextField(
+                key: Key('menu_name_${item.id}'),
                 controller: controller.name,
                 decoration: const InputDecoration(labelText: 'Taom nomi'),
               ),
               const SizedBox(height: 12),
               TextField(
+                key: Key('menu_price_${item.id}'),
                 controller: controller.price,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Narx'),
@@ -288,6 +290,7 @@ class _DirectorMenuScreenState extends State<_DirectorMenuScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
+                  key: Key('menu_save_${item.id}'),
                   onPressed: () => _saveItem(item),
                   child: const Text('Saqlash'),
                 ),
@@ -351,6 +354,7 @@ class _DirectorMenuScreenState extends State<_DirectorMenuScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InkWell(
+                      key: Key('menu_category_${category.name}'),
                       onTap: () {
                         setState(() {
                           if (expanded) {
@@ -594,7 +598,7 @@ class _DirectorWaitersScreen extends StatelessWidget {
           children: [
             const Expanded(
               child: _HeroCard(
-                title: "Ofitsantlar",
+                title: "Ofitsantlar bo'limi",
                 subtitle: 'Xodimlar boshqaruvi',
                 description: "Ofitsantlarni qo'shish va tahrirlash.",
                 color: Color(0xFF234A57),
@@ -612,6 +616,7 @@ class _DirectorWaitersScreen extends StatelessWidget {
         ...waiters.map((waiter) {
           return Card(
             child: ListTile(
+              key: Key('waiter_card_${waiter.username}'),
               leading: _AvatarBadge(name: waiter.fullName, login: waiter.username),
               title: Text(waiter.fullName),
               subtitle: Text('${waiter.username} | ${waiter.phone}'),
@@ -666,8 +671,26 @@ class _WaiterOrdersDialog extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Bugungi olingan buyurtmalar',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
               if (orders.isEmpty) const Text("Buyurtmalar yo'q")
-              else ...orders.map((o) => _OrderHistoryCard(order: o, onReject: () => onRejectOrder(o.id))),
+              else ...orders.map(
+                (o) => _OrderHistoryCard(
+                  order: o,
+                  onReject: () {
+                    Navigator.pop(context);
+                    onRejectOrder(o.id);
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -748,6 +771,8 @@ class _DirectorReportsScreenState extends State<_DirectorReportsScreen> {
             Expanded(child: _MetricCard(title: 'Naqd', value: '${_revenue!.cashTotal ~/ 1000}k', accent: Colors.blue)),
             const SizedBox(width: 12),
             Expanded(child: _MetricCard(title: 'Karta', value: '${_revenue!.cardTotal ~/ 1000}k', accent: Colors.orange)),
+            const SizedBox(width: 12),
+            Expanded(child: _MetricCard(title: 'Aralash', value: '${_revenue!.mixedTotal ~/ 1000}k', accent: Colors.purple)),
           ],
         ),
         const SizedBox(height: 24),
@@ -796,6 +821,7 @@ class _ProfileScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
+                    key: const Key('logout_button'),
                     onPressed: onLogout,
                     child: const Text("Akkauntdan chiqish"),
                   ),
