@@ -60,6 +60,9 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       });
     } catch (e) {
       setState(() {
+        _isLoggedIn = false;
+        _accessToken = null;
+        _currentProfile = null;
         _loginError = e.toString();
         _isLoading = false;
       });
@@ -67,37 +70,45 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   }
 
   Future<void> _loadData() async {
-    if (_accessToken == null) return;
+    if (_accessToken == null) {
+      throw const RestaurantApiException('Sessiya topilmadi.');
+    }
     final token = _accessToken!;
+    final tables = await _apiClient.fetchTables(token);
+    final categories = await _apiClient.fetchCategories(token);
+    final items = await _apiClient.fetchMenuItems(token);
 
+    List<OrderRecord> orders = [];
+    if (_currentRole == UserRole.waiter ||
+        _currentRole == UserRole.director) {
+      orders = await _apiClient.fetchOrders(token, items);
+    }
+
+    DashboardSummary? summary;
+    List<WaiterInfo> waiters = [];
+    if (_currentRole == UserRole.director) {
+      summary = await _apiClient.fetchDashboardSummary(token);
+      waiters = await _apiClient.fetchWaiters(token);
+    }
+
+    setState(() {
+      _tables = tables;
+      _menuCategories = categories;
+      _menuItems = items;
+      _orderRecords = orders;
+      _summary = summary;
+      _waiters = waiters;
+    });
+  }
+
+  Future<void> _refreshData() async {
     try {
-      final tables = await _apiClient.fetchTables(token);
-      final categories = await _apiClient.fetchCategories(token);
-      final items = await _apiClient.fetchMenuItems(token);
-
-      List<OrderRecord> orders = [];
-      if (_currentRole == UserRole.waiter ||
-          _currentRole == UserRole.director) {
-        orders = await _apiClient.fetchOrders(token, items);
-      }
-
-      DashboardSummary? summary;
-      List<WaiterInfo> waiters = [];
-      if (_currentRole == UserRole.director) {
-        summary = await _apiClient.fetchDashboardSummary(token);
-        waiters = await _apiClient.fetchWaiters(token);
-      }
-
-      setState(() {
-        _tables = tables;
-        _menuCategories = categories;
-        _menuItems = items;
-        _orderRecords = orders;
-        _summary = summary;
-        _waiters = waiters;
-      });
+      await _loadData();
     } catch (e) {
-      debugPrint('Data load error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Yangilashda xato: $e')));
     }
   }
 
@@ -384,7 +395,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadData,
+          onRefresh: _refreshData,
           child: _currentRole == UserRole.director
               ? _buildDirectorBody()
               : _buildWaiterBody(),

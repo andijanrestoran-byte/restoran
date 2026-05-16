@@ -50,6 +50,7 @@ class _TableSelectionScreen extends StatelessWidget {
                     : (table.status != 'free' ? const Color(0xFFB26A3C) : const Color(0xFF2B7A4B));
 
                 return InkWell(
+                  key: Key('table_card_${table.id}'),
                   onTap: () => onSelectTable(table.id),
                   child: Card(
                     color: table.status != 'free' ? const Color(0xFFE7D9D2) : Colors.white,
@@ -144,7 +145,7 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Stol #$widget.tableId buyurtmasi', style: Theme.of(context).textTheme.headlineSmall),
+                    Text('Stol #${widget.tableId} buyurtmasi', style: Theme.of(context).textTheme.headlineSmall),
                     Text("Taomlarni tanlang | Shot #${widget.selectedBillNumber}"),
                   ],
                 ),
@@ -240,11 +241,16 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                           children: [
                             IconButton(onPressed: () => widget.onQuantityChanged(item.id, -1), icon: const Icon(Icons.remove_circle_outline)),
                             Text('${widget.quantitiesByItemId[item.id] ?? 0}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            IconButton(onPressed: () => widget.onQuantityChanged(item.id, 1), icon: const Icon(Icons.add_circle_outline)),
+                            IconButton(
+                              key: Key('increase_item_${item.id}'),
+                              onPressed: () => widget.onQuantityChanged(item.id, 1),
+                              icon: const Icon(Icons.add_circle_outline),
+                            ),
                             const Spacer(),
                             if ((widget.quantitiesByItemId[item.id] ?? 0) > 0)
                               Expanded(
                                 child: TextField(
+                                  key: Key('note_item_${item.id}'),
                                   decoration: const InputDecoration(hintText: 'Izoh...', isDense: true),
                                   onChanged: (val) => widget.onNoteChanged(item.id, val),
                                 ),
@@ -275,6 +281,7 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
+                  key: const Key('submit_order'),
                   onPressed: totalItems > 0 && !widget.isSubmitting ? widget.onSubmit : null,
                   child: Text(widget.isSubmitting ? 'Yuborilmoqda...' : 'Buyurtmani yuborish'),
                 ),

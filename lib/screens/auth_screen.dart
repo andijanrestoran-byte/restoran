@@ -102,6 +102,7 @@ class _LoginScreenState extends State<_LoginScreen> {
                   ),
                   const SizedBox(height: 32),
                   TextField(
+                    key: const Key('login_username'),
                     controller: _usernameController,
                     onChanged: widget.onLoginChanged,
                     decoration: InputDecoration(
@@ -116,6 +117,7 @@ class _LoginScreenState extends State<_LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   TextField(
+                    key: const Key('login_password'),
                     controller: _passwordController,
                     onChanged: widget.onPasswordChanged,
                     obscureText: true,
@@ -163,6 +165,7 @@ class _LoginScreenState extends State<_LoginScreen> {
                     width: double.infinity,
                     height: 56,
                     child: FilledButton(
+                      key: const Key('login_submit'),
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),

@@ -217,6 +217,7 @@ class RevenueReport {
     required this.period,
     required this.cashTotal,
     required this.cardTotal,
+    required this.mixedTotal,
     required this.grandTotal,
     required this.dailyBreakdown,
   });
@@ -224,6 +225,7 @@ class RevenueReport {
   final String period;
   final int cashTotal;
   final int cardTotal;
+  final int mixedTotal;
   final int grandTotal;
   final List<DailyBreakdown> dailyBreakdown;
 }
@@ -233,12 +235,14 @@ class DailyBreakdown {
     required this.date,
     required this.cash,
     required this.card,
+    required this.mixed,
     required this.total,
   });
 
   final String date;
   final int cash;
   final int card;
+  final int mixed;
   final int total;
 }
 
