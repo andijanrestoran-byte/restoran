@@ -74,7 +74,10 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       throw const RestaurantApiException('Sessiya topilmadi.');
     }
     final token = _accessToken!;
-    final tables = await _apiClient.fetchTables(token);
+    final tables = await _apiClient.fetchTables(
+      token,
+      director: _currentRole == UserRole.director,
+    );
     final categories = await _apiClient.fetchCategories(token);
     final items = await _apiClient.fetchMenuItems(token);
 

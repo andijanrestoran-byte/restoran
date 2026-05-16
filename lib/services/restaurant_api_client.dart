@@ -236,12 +236,19 @@ class RestaurantApiClient {
     };
   }
 
-  Future<List<TableInfo>> fetchTables(String token) async {
+  Future<List<TableInfo>> fetchTables(
+    String token, {
+    bool director = false,
+  }) async {
     if (_isDemoToken(token)) {
       return _demoStore.fetchTables();
     }
 
-    final data = await _request('GET', '/v1/waiter/all-tables', token: token);
+    // Direktorga /v1/waiter/all-tables 403 beradi (faqat ofitsant uchun).
+    // Direktor /v1/tables dan oladi; ofitsant /v1/waiter/all-tables dan
+    // (u yerda assigned_waiters to'ldirilgan bo'ladi).
+    final path = director ? '/v1/tables' : '/v1/waiter/all-tables';
+    final data = await _request('GET', path, token: token);
     final rows = _results(data);
     return rows.map((row) {
       final item = row as Map<String, dynamic>;
@@ -456,10 +463,13 @@ class RestaurantApiClient {
       );
     }
 
+    // Server (kassa) CreateOrderSerializer: table_id, bill_number, note,
+    // items[]. Maydon nomi 'items' (avval xato 'order_items' edi).
     final body = <String, dynamic>{
       'table_id': tableId,
+      'bill_number': billNumber ?? 1,
       'note': note,
-      'order_items': items,
+      'items': items,
     };
     final data =
         await _request('POST', '/v1/orders', token: token, body: body)
