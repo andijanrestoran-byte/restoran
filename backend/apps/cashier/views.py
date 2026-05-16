@@ -1,10 +1,12 @@
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
-from apps.restaurant.models import DiningTable, Order, OrderStatus
+from apps.restaurant.models import DiningTable, Order, OrderStatus, StaffProfile, StaffRole
 
 
 ACTIVE_ORDER_STATUSES = (OrderStatus.ACTIVE,)
@@ -146,3 +148,89 @@ def reject_item(request, pk: int, item_id: int):
     order.status = OrderStatus.REJECTED
     order.save(update_fields=["status", "updated_at"])
     return redirect("orders:order_detail", pk=pk)
+
+
+# ---- Xodim (ofitsant) boshqaruvi ----
+# Web platformada kassir VA direktor faqat OFITSANT qo'sha/o'chira oladi
+# (login + parol bilan). Direktor akkaunt yaratish bu yerda yo'q.
+
+def _can_manage_staff(user) -> bool:
+    if user.is_superuser:
+        return True
+    profile = getattr(user, "staff_profile", None)
+    return profile is not None and profile.role in (StaffRole.CASHIER, StaffRole.DIRECTOR)
+
+
+@require_GET
+@login_required
+def staff_list(request):
+    if not _can_manage_staff(request.user):
+        messages.error(request, "Bu bo'lim faqat kassir va direktor uchun.")
+        return redirect("orders:dashboard")
+
+    waiters = (
+        User.objects.filter(staff_profile__role=StaffRole.WAITER)
+        .select_related("staff_profile")
+        .order_by("username")
+    )
+    return render(
+        request,
+        "orders/staff_list.html",
+        {**_base_context(), "waiters": waiters},
+    )
+
+
+@require_POST
+@login_required
+def staff_create(request):
+    if not _can_manage_staff(request.user):
+        messages.error(request, "Bu amal faqat kassir va direktor uchun.")
+        return redirect("orders:dashboard")
+
+    username = (request.POST.get("username") or "").strip().lower()
+    password = request.POST.get("password") or ""
+    full_name = (request.POST.get("full_name") or "").strip()
+    phone = (request.POST.get("phone") or "").strip()
+    shift = (request.POST.get("shift") or "").strip()
+    experience = (request.POST.get("experience") or "").strip()
+
+    if not username or not password or not full_name:
+        messages.error(request, "Login, parol va F.I.SH majburiy.")
+        return redirect("orders:staff_list")
+    if User.objects.filter(username=username).exists():
+        messages.error(request, f"'{username}' login allaqachon mavjud.")
+        return redirect("orders:staff_list")
+
+    name_parts = full_name.split(" ", 1)
+    user = User(
+        username=username,
+        first_name=name_parts[0] if name_parts else "",
+        last_name=name_parts[1] if len(name_parts) > 1 else "",
+    )
+    user.set_password(password)
+    user.save()
+    StaffProfile.objects.create(
+        user=user,
+        role=StaffRole.WAITER,
+        phone=phone,
+        shift=shift,
+        experience=experience,
+    )
+    messages.success(request, f"Ofitsant '{username}' qo'shildi.")
+    return redirect("orders:staff_list")
+
+
+@require_POST
+@login_required
+def staff_delete(request, user_id: int):
+    if not _can_manage_staff(request.user):
+        messages.error(request, "Bu amal faqat kassir va direktor uchun.")
+        return redirect("orders:dashboard")
+
+    waiter = get_object_or_404(
+        User, pk=user_id, staff_profile__role=StaffRole.WAITER
+    )
+    username = waiter.username
+    waiter.delete()
+    messages.success(request, f"Ofitsant '{username}' o'chirildi.")
+    return redirect("orders:staff_list")

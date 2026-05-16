@@ -16,4 +16,7 @@ urlpatterns = [
     path("tables/<int:table_id>/", views.table_bill, name="table_bill"),
     path("tables/<int:table_id>/print/", views.table_print, name="table_print"),
     path("tables/<int:table_id>/close/", views.close_table, name="close_table"),
+    path("staff/", views.staff_list, name="staff_list"),
+    path("staff/create/", views.staff_create, name="staff_create"),
+    path("staff/<int:user_id>/delete/", views.staff_delete, name="staff_delete"),
 ]

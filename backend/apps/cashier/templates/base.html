@@ -33,6 +33,7 @@
                 <a href="{% url 'orders:orders_list' %}" class="{% if request.resolver_match.url_name == 'orders_list' or request.resolver_match.url_name == 'order_detail' %}active{% endif %}">Buyurtmalar</a>
                 <a href="{% url 'orders:rejected_orders' %}" class="{% if request.resolver_match.url_name == 'rejected_orders' %}active{% endif %}">Rad etilganlar</a>
                 <a href="{% url 'orders:tables_overview' %}" class="{% if request.resolver_match.url_name == 'tables_overview' or request.resolver_match.url_name == 'table_bill' %}active{% endif %}">Stollar</a>
+                <a href="{% url 'orders:staff_list' %}" class="{% if request.resolver_match.url_name == 'staff_list' %}active{% endif %}">Xodimlar</a>
                 <a href="{% url 'logout' %}">Chiqish</a>
             </div>
         {% endif %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Xodimlar{% endblock %}
+
+{% block content %}
+    <div class="hero">
+        <h1>Ofitsantlar</h1>
+        <p class="meta">Ofitsant qo'shish, o'chirish va ularga login/parol berish. (Kassir va direktor uchun.)</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="card {% if message.tags == 'error' %}danger{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card" style="max-width:520px;">
+        <h3>Yangi ofitsant qo'shish</h3>
+        <form method="post" action="{% url 'orders:staff_create' %}" class="form-grid">
+            {% csrf_token %}
+            <div>
+                <label for="id_full_name">F.I.SH *</label>
+                <input id="id_full_name" type="text" name="full_name" required>
+            </div>
+            <div>
+                <label for="id_username">Login *</label>
+                <input id="id_username" type="text" name="username" autocomplete="off" required>
+            </div>
+            <div>
+                <label for="id_password">Parol *</label>
+                <input id="id_password" type="text" name="password" autocomplete="new-password" required>
+            </div>
+            <div>
+                <label for="id_phone">Telefon</label>
+                <input id="id_phone" type="text" name="phone">
+            </div>
+            <div>
+                <label for="id_shift">Smena</label>
+                <input id="id_shift" type="text" name="shift">
+            </div>
+            <div>
+                <label for="id_experience">Tajriba</label>
+                <input id="id_experience" type="text" name="experience">
+            </div>
+            <button class="btn" type="submit">Qo'shish</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Ofitsantlar ro'yxati ({{ waiters|length }})</h3>
+        {% if waiters %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>F.I.SH</th>
+                        <th>Login</th>
+                        <th>Telefon</th>
+                        <th>Smena</th>
+                        <th>Tajriba</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in waiters %}
+                        <tr>
+                            <td>{{ w.get_full_name|default:w.username }}</td>
+                            <td><span class="pill">{{ w.username }}</span></td>
+                            <td>{{ w.staff_profile.phone|default:"—" }}</td>
+                            <td>{{ w.staff_profile.shift|default:"—" }}</td>
+                            <td>{{ w.staff_profile.experience|default:"—" }}</td>
+                            <td>
+                                <form method="post" action="{% url 'orders:staff_delete' w.id %}" class="inline"
+                                      onsubmit="return confirm('{{ w.username }} o\'chirilsinmi?');">
+                                    {% csrf_token %}
+                                    <button class="btn danger" type="submit">O'chirish</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="meta">Hozircha ofitsant yo'q.</p>
+        {% endif %}
+    </div>
+{% endblock %}
