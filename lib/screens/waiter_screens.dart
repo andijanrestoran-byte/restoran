@@ -216,8 +216,18 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                   child: Text(cat.name, style: Theme.of(context).textTheme.titleLarge),
                 ),
                 if (items.isEmpty) const Text("Bu kategoriyada taom yo'q")
-                else ...items.map((item) => Card(
-                  child: Padding(
+                else ...items.map((item) {
+                  final int qty = widget.quantitiesByItemId[item.id] ?? 0;
+                  final int? remaining = item.remainingToday;
+                  // remaining == null => cheksiz (sig'im belgilanmagan)
+                  final bool soldOut =
+                      !item.isAvailable || (remaining != null && remaining <= 0);
+                  final bool atLimit =
+                      remaining != null && remaining > 0 && qty >= remaining;
+                  return Card(
+                  child: Opacity(
+                    opacity: soldOut ? 0.55 : 1,
+                    child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
@@ -231,6 +241,26 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                                 children: [
                                   Text(item.name, style: Theme.of(context).textTheme.titleMedium),
                                   Text("${item.price} so'm", style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                                  if (remaining != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: soldOut
+                                            ? Colors.red.withValues(alpha: 0.15)
+                                            : Colors.green.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        soldOut ? 'Tugadi' : 'Bugun: $remaining porsiya',
+                                        style: TextStyle(
+                                          color: soldOut ? Colors.red : Colors.green.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -239,15 +269,15 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            IconButton(onPressed: () => widget.onQuantityChanged(item.id, -1), icon: const Icon(Icons.remove_circle_outline)),
-                            Text('${widget.quantitiesByItemId[item.id] ?? 0}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            IconButton(onPressed: soldOut ? null : () => widget.onQuantityChanged(item.id, -1), icon: const Icon(Icons.remove_circle_outline)),
+                            Text('$qty', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                             IconButton(
                               key: Key('increase_item_${item.id}'),
-                              onPressed: () => widget.onQuantityChanged(item.id, 1),
+                              onPressed: (soldOut || atLimit) ? null : () => widget.onQuantityChanged(item.id, 1),
                               icon: const Icon(Icons.add_circle_outline),
                             ),
                             const Spacer(),
-                            if ((widget.quantitiesByItemId[item.id] ?? 0) > 0)
+                            if (qty > 0)
                               Expanded(
                                 child: TextField(
                                   key: Key('note_item_${item.id}'),
@@ -257,10 +287,23 @@ class _MenuOrderScreenState extends State<_MenuOrderScreen> {
                               ),
                           ],
                         ),
+                        if (atLimit)
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: Text(
+                                'Bugungi limit tugadi',
+                                style: TextStyle(color: Colors.orange, fontSize: 12),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                )),
+                  ),
+                );
+                }),
               ];
             }).toList(),
           ),
