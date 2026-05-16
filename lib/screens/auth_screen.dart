@@ -105,6 +105,13 @@ class _LoginScreenState extends State<_LoginScreen> {
                     key: const Key('login_username'),
                     controller: _usernameController,
                     onChanged: widget.onLoginChanged,
+                    // Mobil klaviatura username'ni avtokorreksiya/bosh
+                    // harf qilmasin (masalan "direktor" -> "Direktor"),
+                    // aks holda server 401 qaytaradi.
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textCapitalization: TextCapitalization.none,
+                    keyboardType: TextInputType.visiblePassword,
                     decoration: InputDecoration(
                       labelText: 'Login',
                       prefixIcon: const Icon(Icons.person_outline),

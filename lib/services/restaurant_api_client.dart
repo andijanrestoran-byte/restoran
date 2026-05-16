@@ -77,8 +77,14 @@ class RestaurantApiClient {
       }
       if (body != null) {
         final jsonBody = jsonEncode(body);
+        final bodyBytes = utf8.encode(jsonBody);
         request.headers.contentType = ContentType.json;
-        request.add(utf8.encode(jsonBody));
+        // MUHIM: contentLength o'rnatilmasa, HttpClient tanani "chunked"
+        // Transfer-Encoding bilan yuboradi. Railway/Django bu chunked
+        // tanani o'qimaydi -> server bo'sh ma'lumot ko'radi -> 401
+        // "Login yoki parol noto'g'ri". Content-Length majburiy.
+        request.contentLength = bodyBytes.length;
+        request.add(bodyBytes);
       }
 
       // Railway "cold start" sekin bo'lishi mumkin — umumiy javob uchun
@@ -151,10 +157,11 @@ class RestaurantApiClient {
   }
 
   Future<ApiSession> _authenticate(String username, String password) async {
-    // Faqat username tozalanadi. Parolni trim QILMAYMIZ — serverdagi parol
-    // probel bilan bo'lishi mumkin va trim qilish "to'g'ri parol rad etildi"
-    // muammosini keltirib chiqaradi.
-    final normalizedUsername = username.trim();
+    // Username trim + lowercase: mobil klaviatura bosh harf qo'shsa ham
+    // serverga to'g'ri yetib boradi (server loginlari kichik harfda).
+    // Parolni trim QILMAYMIZ — serverdagi parol probel bilan bo'lishi
+    // mumkin va trim "to'g'ri parol rad etildi" muammosini keltiradi.
+    final normalizedUsername = username.trim().toLowerCase();
     debugPrint('LOGIN $normalizedUsername');
 
     try {
