@@ -278,28 +278,6 @@ class ProductSales {
 
 // ---- Helper functions ----
 
-IconData _iconForCategory(String category) {
-  final normalized = category.toLowerCase();
-  if (normalized.contains('milliy')) return Icons.rice_bowl;
-  if (normalized.contains('turk')) return Icons.kebab_dining;
-  if (normalized.contains('fast')) return Icons.fastfood;
-  if (normalized.contains('salat')) return Icons.eco;
-  if (normalized.contains('ichimlik')) return Icons.emoji_food_beverage;
-  if (normalized.contains('desert')) return Icons.cake;
-  return Icons.restaurant;
-}
-
-Color _colorForCategory(String category) {
-  final normalized = category.toLowerCase();
-  if (normalized.contains('milliy')) return const Color(0xFFF2D7B5);
-  if (normalized.contains('turk')) return const Color(0xFFF3D0C7);
-  if (normalized.contains('fast')) return const Color(0xFFF9D6A2);
-  if (normalized.contains('salat')) return const Color(0xFFDFF0D8);
-  if (normalized.contains('ichimlik')) return const Color(0xFFD7EBF3);
-  if (normalized.contains('desert')) return const Color(0xFFF5DDED);
-  return const Color(0xFFEFE3D6);
-}
-
 OrderStatus _orderStatusFromApi(String? status) {
   switch (status) {
     case 'rejected':

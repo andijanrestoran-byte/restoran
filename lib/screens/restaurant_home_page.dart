@@ -181,10 +181,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
         _orderStep = OrderStep.menu;
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -228,15 +229,17 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       _selectedTableId = null;
       _orderStep = OrderStep.tables;
       await _loadData();
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Buyurtma yuborildi')));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -250,10 +253,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createCategory(_accessToken!, name, sortOrder);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -263,10 +267,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateCategory(_accessToken!, id, name, sortOrder);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -276,10 +281,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteCategory(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -289,10 +295,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createMenuItem(_accessToken!, data);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -302,10 +309,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateMenuItem(_accessToken!, id, data);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -315,10 +323,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteMenuItem(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -328,10 +337,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.rejectOrder(_accessToken!, orderId);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -341,10 +351,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.createWaiter(_accessToken!, data);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -354,10 +365,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.updateWaiter(_accessToken!, id, data);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
@@ -367,10 +379,11 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
       await _apiClient.deleteWaiter(_accessToken!, id);
       await _loadData();
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Xato: $e')));
+      }
     }
   }
 
