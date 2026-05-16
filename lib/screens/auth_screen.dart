@@ -75,7 +75,7 @@ class _LoginScreenState extends State<_LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8A4B2A).withOpacity(0.1),
+                      color: const Color(0xFF8A4B2A).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
