@@ -74,6 +74,7 @@ class MenuItemData {
     this.isActive = true,
     this.remainingToday,
     this.isAvailable = true,
+    this.isRejectable = true,
     this.imageUrl,
   });
 
@@ -88,6 +89,7 @@ class MenuItemData {
   final bool isActive;
   final int? remainingToday;
   final bool isAvailable;
+  final bool isRejectable;
   final String? imageUrl;
 
   MenuItemData copyWith({
@@ -111,6 +113,7 @@ class MenuItemData {
       isActive: isActive,
       remainingToday: remainingToday,
       isAvailable: isAvailable,
+      isRejectable: isRejectable,
       imageUrl: imageUrl,
     );
   }

@@ -367,6 +367,7 @@ class RestaurantApiClient {
         isActive: item['is_active'] as bool? ?? true,
         remainingToday: item['remaining_today'] as int?,
         isAvailable: item['is_available'] as bool? ?? true,
+        isRejectable: item['is_rejectable'] as bool? ?? true,
         imageUrl: item['image_url']?.toString(),
       );
     }).toList();
